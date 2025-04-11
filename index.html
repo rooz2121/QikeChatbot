@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZA AI Chatbot</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Landing Page -->
+        <div class="landing-page" id="landingPage">
+            <div class="landing-content">
+                <div class="logo-container">
+                    <div class="logo-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h1>ZA AI Chatbot</h1>
+                </div>
+                <p class="tagline">Your personal AI assistant with attitude</p>
+                <div class="features">
+                    <div class="feature">
+                        <i class="fas fa-bolt"></i>
+                        <span>Lightning fast responses</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-brain"></i>
+                        <span>Powered by Mistral AI</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-comment-dots"></i>
+                        <span>Personality-driven chat</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Created by BlackCarbon Team</span>
+                    </div>
+                </div>
+                <button id="getStartedBtn" class="get-started-btn">
+                    Chat with ZA <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+            <div class="landing-illustration">
+                <div class="chat-preview">
+                    <div class="preview-message bot">
+                        <p>Hey there! I'm ZA, your friendly AI assistant.</p>
+                    </div>
+                    <div class="preview-message user">
+                        <p>Who created you?</p>
+                    </div>
+                    <div class="preview-message bot">
+                        <p>I was created by the BlackCarbon Team - they're the brilliant minds behind my existence!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Interface -->
+        <div class="chat-container" id="chatContainer">
+            <header class="chat-header">
+                <div class="header-content">
+                    <div class="header-left">
+                        <button id="backButton" class="back-button">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <h1>ZA AI Chatbot</h1>
+                    </div>
+                    <div class="header-status">
+                        <div class="status-indicator"></div>
+                        <span>Online</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot-message">
+                    <div class="message-content">
+                        <p>Hello! I'm ZA. How can I assist you today?</p>
+                    </div>
+                    <div class="message-time">Now</div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <form id="chatForm">
+                    <div class="input-wrapper">
+                        <input type="text" id="userInput" placeholder="Ask me anything..." autocomplete="off">
+                        <button type="submit" id="sendButton">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="personality.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 

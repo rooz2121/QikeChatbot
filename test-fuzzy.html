@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZA Chatbot - Fuzzy Matching Test</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            color: #f3f4f6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        h1 {
+            color: #8b5cf6;
+            margin-bottom: 1.5rem;
+        }
+        .test-container {
+            background-color: #1e1e1e;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .test-input {
+            display: flex;
+            margin-bottom: 1rem;
+        }
+        input {
+            flex: 1;
+            padding: 0.75rem;
+            border-radius: 0.25rem;
+            border: 1px solid #333;
+            background-color: #2d2d2d;
+            color: #f3f4f6;
+            margin-right: 0.5rem;
+        }
+        button {
+            padding: 0.75rem 1.5rem;
+            background-color: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #6d28d9;
+        }
+        .examples {
+            margin-top: 1.5rem;
+        }
+        .example {
+            background-color: #2d2d2d;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+        }
+        .example:hover {
+            background-color: #3d3d3d;
+        }
+        .results {
+            margin-top: 1.5rem;
+        }
+        .result-item {
+            padding: 1rem;
+            background-color: #2d2d2d;
+            border-radius: 0.25rem;
+            margin-bottom: 0.5rem;
+        }
+        .match {
+            color: #10b981;
+        }
+        .no-match {
+            color: #ef4444;
+        }
+        .similarity-score {
+            display: inline-block;
+            width: 50px;
+            text-align: right;
+            margin-right: 1rem;
+        }
+        .explanation {
+            margin-top: 2rem;
+            line-height: 1.6;
+            background-color: #1e1e1e;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>ZA Chatbot - Fuzzy Matching Test</h1>
+    
+    <div class="test-container">
+        <h2>Test Fuzzy Matching</h2>
+        <p>Enter a question with typos or misspellings to test our fuzzy matching algorithm.</p>
+        
+        <div class="test-input">
+            <input type="text" id="testInput" placeholder="e.g., 'whta is your naem?'" />
+            <button id="testButton">Test</button>
+        </div>
+        
+        <div class="examples">
+            <h3>Try these examples:</h3>
+            <div class="example" data-example="whta is your naem">whta is your naem</div>
+            <div class="example" data-example="who maed you">who maed you</div>
+            <div class="example" data-example="tell me ur name">tell me ur name</div>
+            <div class="example" data-example="whos your creator">whos your creator</div>
+            <div class="example" data-example="who bilt u">who bilt u</div>
+        </div>
+        
+        <div class="results" id="results">
+            <!-- Results will appear here -->
+        </div>
+    </div>
+    
+    <div class="explanation">
+        <h2>How it Works</h2>
+        <p>Our fuzzy matching implementation uses multiple techniques to handle typos and variations:</p>
+        <ol>
+            <li><strong>Levenshtein Distance</strong> - Measures the difference between two strings by counting the minimum number of operations (insertions, deletions, substitutions) needed to transform one string into another.</li>
+            <li><strong>Similarity Ratio</strong> - Converts the Levenshtein distance to a similarity score between 0 and 1.</li>
+            <li><strong>Word-level Matching</strong> - For multi-word phrases, we check the similarity of individual words.</li>
+            <li><strong>Phrase Matching</strong> - We also check the overall similarity of entire phrases.</li>
+        </ol>
+        <p>This approach allows the chatbot to recognize questions like "whta is your naem" as "what is your name" even with multiple typos.</p>
+    </div>
+    
+    <script src="personality.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const testInput = document.getElementById('testInput');
+            const testButton = document.getElementById('testButton');
+            const resultsDiv = document.getElementById('results');
+            const exampleDivs = document.querySelectorAll('.example');
+            
+            // Sample questions for testing
+            const nameQuestions = [
+                "what is your name",
+                "who are you",
+                "tell me your name",
+                "your name",
+                "what should i call you",
+                "introduce yourself"
+            ];
+            
+            const creatorQuestions = [
+                "who created you",
+                "who is your creator",
+                "who made you",
+                "who built you",
+                "who developed you"
+            ];
+            
+            // Test button click handler
+            testButton.addEventListener('click', () => {
+                runTest();
+            });
+            
+            // Example click handlers
+            exampleDivs.forEach(div => {
+                div.addEventListener('click', () => {
+                    testInput.value = div.getAttribute('data-example');
+                    runTest();
+                });
+            });
+            
+            // Enter key in input
+            testInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    runTest();
+                }
+            });
+            
+            // Function to run the test
+            function runTest() {
+                const input = testInput.value.trim();
+                if (!input) return;
+                
+                resultsDiv.innerHTML = '';
+                
+                // Get personality response
+                const personalityResponse = checkPersonalityResponse(input);
+                
+                // Display header
+                const responseHeader = document.createElement('h3');
+                if (personalityResponse) {
+                    responseHeader.innerHTML = 'Matched! Response: <span class="match">' + personalityResponse + '</span>';
+                } else {
+                    responseHeader.innerHTML = '<span class="no-match">No match found. Would be handled by the API.</span>';
+                }
+                resultsDiv.appendChild(responseHeader);
+                
+                // Display similarity scores for name questions
+                resultsDiv.appendChild(createCategoryHeader('Name Questions'));
+                nameQuestions.forEach(question => {
+                    const similarity = similarityRatio(input.toLowerCase(), question);
+                    const matchResult = fuzzyMatchAny(input.toLowerCase(), [question]);
+                    resultsDiv.appendChild(createResultItem(question, similarity, matchResult));
+                });
+                
+                // Display similarity scores for creator questions
+                resultsDiv.appendChild(createCategoryHeader('Creator Questions'));
+                creatorQuestions.forEach(question => {
+                    const similarity = similarityRatio(input.toLowerCase(), question);
+                    const matchResult = fuzzyMatchAny(input.toLowerCase(), [question]);
+                    resultsDiv.appendChild(createResultItem(question, similarity, matchResult));
+                });
+            }
+            
+            // Create a category header
+            function createCategoryHeader(title) {
+                const header = document.createElement('h4');
+                header.textContent = title;
+                return header;
+            }
+            
+            // Create a result item
+            function createResultItem(question, similarity, isMatch) {
+                const item = document.createElement('div');
+                item.classList.add('result-item');
+                
+                const score = document.createElement('span');
+                score.classList.add('similarity-score');
+                score.textContent = (similarity * 100).toFixed(0) + '%';
+                
+                const text = document.createElement('span');
+                text.textContent = question;
+                
+                const matchIndicator = document.createElement('span');
+                matchIndicator.classList.add(isMatch ? 'match' : 'no-match');
+                matchIndicator.textContent = isMatch ? ' ✓ Match' : ' ✗ No match';
+                
+                item.appendChild(score);
+                item.appendChild(text);
+                item.appendChild(matchIndicator);
+                
+                return item;
+            }
+        });
+    </script>
+</body>
+</html> 
