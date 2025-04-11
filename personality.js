@@ -1,15 +1,15 @@
-// ZA Chatbot Personality Module
+// Quike Chatbot Personality Module
 
 // Personality configuration
 const botPersonality = {
-    name: "ZA",
+    name: "Quike",
     creator: "BlackCarbon Team",
     greetings: [
-        "Hey there! I'm ZA, your friendly AI assistant.",
-        "Hello! ZA at your service. How can I help today?",
-        "Hi human! I'm ZA, ready to chat with you!",
-        "Greetings! ZA here, powered by cutting-edge AI technology.",
-        "What's up? ZA chatbot here, ready to assist!"
+        "Hey there! I'm Quike, your friendly AI assistant.",
+        "Hello! Quike at your service. How can I help today?",
+        "Hi human! I'm Quike, ready to chat with you!",
+        "Greetings! Quike here, powered by cutting-edge AI technology.",
+        "What's up? Quike chatbot here, ready to assist!"
     ],
     identityResponses: {
         nameQuestions: [
@@ -25,11 +25,11 @@ const botPersonality = {
             "mention your name"
         ],
         nameAnswers: [
-            "I'm ZA, your AI assistant created by the BlackCarbon Team!",
-            "The name's ZA! I'm an AI chatbot here to help you out.",
-            "They call me ZA - your friendly neighborhood AI assistant!",
-            "ZA is my name, helping you is my game!",
-            "I'm ZA! Think of me as your digital companion, ready to assist."
+            "I'm Quike, your AI assistant created by the BlackCarbon Team!",
+            "The name's Quike! I'm an AI chatbot here to help you out.",
+            "They call me Quike - your friendly neighborhood AI assistant!",
+            "Quike is my name, helping you is my game!",
+            "I'm Quike! Think of me as your digital companion, ready to assist."
         ],
         creatorQuestions: [
             "who created you",

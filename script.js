@@ -8,9 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const userInput = document.getElementById('userInput');
     const chatMessages = document.getElementById('chatMessages');
     const apiKey = 'V2NiNfHiCxawfR1QeCp1KxZKjIkJDM52'; // Mistral AI API key
+    const particlesContainer = document.getElementById('particles');
 
     // Initialize - hide chat container, show landing page
     chatContainer.style.display = 'none';
+    
+    // Create animated background particles
+    createParticles();
 
     // Button click handlers
     getStartedBtn.addEventListener('click', () => {
@@ -178,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     model: 'mistral-medium',
                     messages: [
-                        { role: 'system', content: `You are ZA, an AI assistant created by the BlackCarbon Team. Your responses should be helpful, friendly, and conversational. If someone asks about who created you, always mention that you were made by the BlackCarbon Team.` },
+                        { role: 'system', content: `You are Quike, an AI assistant created by the BlackCarbon Team. Your responses should be helpful, friendly, and conversational. If someone asks about who created you, always mention that you were made by the BlackCarbon Team.` },
                         { role: 'user', content: message }
                     ],
                     temperature: 0.7,
@@ -212,5 +216,46 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             message.style.opacity = '1';
         }, index * 300);
+    });
+    
+    // Function to create animated background particles
+    function createParticles() {
+        if (!particlesContainer) return;
+        
+        // Clear existing particles
+        particlesContainer.innerHTML = '';
+        
+        // Number of particles to create
+        const particleCount = window.innerWidth < 768 ? 15 : 25;
+        
+        // Create particles
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            
+            // Random size
+            const size = Math.random() * 10 + 4;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            
+            // Random starting position
+            const posX = Math.random() * 100;
+            const posY = Math.random() * 100;
+            particle.style.left = `${posX}%`;
+            particle.style.bottom = `${-10}%`; // Start below screen
+            
+            // Random animation properties
+            const duration = Math.random() * 20 + 10;
+            const delay = Math.random() * 10;
+            particle.style.animation = `float-particle ${duration}s ${delay}s infinite linear`;
+            
+            // Add particle to container
+            particlesContainer.appendChild(particle);
+        }
+    }
+    
+    // Handle window resize for particles
+    window.addEventListener('resize', () => {
+        createParticles();
     });
 }); 

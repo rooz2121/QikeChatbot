@@ -1,10 +1,10 @@
-# ZA AI Chatbot
+# Quike Chatbot
 
 A beautiful, responsive chatbot interface with a dark-themed aesthetic similar to Grok AI, featuring personality-driven responses.
 
 ## Features
 
-- Stylish landing page with "Chat with ZA" button
+- Stylish landing page with "Chat with Quike" button
 - Smooth transition animations between screens
 - Elegant card-based design with gradient accents
 - Responsive layout that works on all devices
@@ -17,7 +17,7 @@ A beautiful, responsive chatbot interface with a dark-themed aesthetic similar t
 
 ## Personality Features
 
-The ZA chatbot comes with a built-in personality system that:
+The Quike chatbot comes with a built-in personality system that:
 
 - Responds to identity questions like "What is your name?" or "Who are you?"
 - Correctly identifies itself as a creation of the BlackCarbon Team
@@ -41,7 +41,7 @@ The ZA chatbot comes with a built-in personality system that:
 
 1. Clone this repository
 2. Open `index.html` in your browser
-3. Click "Chat with ZA" to begin chatting with the ZA AI Chatbot!
+3. Click "Chat with Quike" to begin chatting with the Quike Chatbot!
 
 ## API Key
 
