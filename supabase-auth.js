@@ -16,10 +16,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Google login button handler
     googleLoginBtn.addEventListener('click', async () => {
         try {
+            // Get the current URL and use it for redirectTo
+            // This ensures we redirect back to the correct domain (Netlify or localhost)
+            const currentUrl = window.location.href.split('#')[0].split('?')[0];
+            console.log('Using redirect URL:', currentUrl);
+            
             const { data, error } = await window.supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: window.location.origin
+                    redirectTo: currentUrl
                 }
             });
             
@@ -147,64 +152,118 @@ async function checkUserSettings(userId) {
 
 // Function to load user's chat history
 async function loadChatHistory(userId) {
+    console.log('Loading chat history for user ID:', userId);
     try {
         // Get all chat sessions for the user
         const { data: sessions, error } = await window.supabaseClient
             .from('chat_sessions')
             .select('*')
+            .eq('user_id', userId) // Filter by user_id
             .order('updated_at', { ascending: false });
             
         if (error) throw error;
         
+        console.log('Retrieved chat sessions:', sessions);
+        
         // Clear existing history items
         const historyList = document.querySelector('.history-list');
-        historyList.innerHTML = '';
+        
+        if (!historyList) {
+            console.error('History list element not found');
+            return;
+        }
+        
+        // Add loading indicator
+        historyList.innerHTML = '<div class="loading-history"><div class="spinner"></div>Loading chat history...</div>';
         
         // Add each session to the history list
         if (sessions && sessions.length > 0) {
+            // Clear the loading indicator
+            historyList.innerHTML = '';
+            
+            // Create a document fragment for better performance
+            const fragment = document.createDocumentFragment();
+            
             // Use Promise.all to handle all async createHistoryItem calls
             const historyPromises = sessions.map(async (session) => {
                 const historyItem = await createHistoryItem(session);
-                historyList.appendChild(historyItem);
+                fragment.appendChild(historyItem);
                 return { session, element: historyItem };
             });
             
             // Wait for all history items to be created
-            Promise.all(historyPromises).then(results => {
-                // If there are sessions, load the most recent one
+            const results = await Promise.all(historyPromises);
+            
+            // Append all items at once
+            historyList.appendChild(fragment);
+            
+            // If there are sessions, load the most recent one
+            if (sessions.length > 0) {
                 loadChatSession(sessions[0].id);
-            });
+            }
         } else {
-            // No sessions, create a new one
-            createNewChatSession();
+            // No sessions, either show a message or create a new one
+            historyList.innerHTML = '<div class="no-history">No chat history yet.<br>Start a new conversation!</div>';
+            // Create a new session after a short delay
+            setTimeout(() => {
+                createNewChatSession();
+            }, 500);
         }
     } catch (error) {
         console.error('Error loading chat history:', error.message);
+        const historyList = document.querySelector('.history-list');
+        if (historyList) {
+            historyList.innerHTML = `<div class="error-loading">Error loading chat history: ${error.message}</div>`;
+        }
     }
 }
 
 // Function to create a history item element
 async function createHistoryItem(session) {
+    console.log('Creating history item for session:', session);
     const historyItem = document.createElement('div');
     historyItem.classList.add('history-item');
     historyItem.dataset.sessionId = session.id;
     
     // Get the last message for this session to show as preview
     let previewText = 'Click to view this chat';
+    let lastMessageTime = new Date(session.updated_at || session.created_at);
+    
     try {
         const { data: messages, error } = await window.supabaseClient
             .from('messages')
-            .select('content, role')
+            .select('content, role, created_at')
             .eq('session_id', session.id)
             .order('created_at', { ascending: false })
             .limit(1);
             
+        console.log('Message preview query results for session', session.id, ':', messages, error);
+            
         if (!error && messages && messages.length > 0) {
-            // Truncate message preview to 30 characters
-            previewText = messages[0].content.substring(0, 30) + (messages[0].content.length > 30 ? '...' : '');
+            // Update timestamp from the most recent message
+            if (messages[0].created_at) {
+                lastMessageTime = new Date(messages[0].created_at);
+            }
+            
+            // Only show preview for bot messages as they contain the meaningful responses
+            if (messages[0].role === 'assistant') {
+                // Clean up content by removing markdown and code blocks for preview
+                let cleanContent = messages[0].content
+                    .replace(/```[\s\S]*?```/g, '[Code Block]') // Replace code blocks
+                    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+                    .replace(/\*(.*?)\*/g, '$1') // Remove italic
+                    .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // Remove links
+                    .replace(/\n/g, ' '); // Replace newlines with spaces
+                    
+                // Truncate message preview to 40 characters
+                previewText = cleanContent.substring(0, 40) + (cleanContent.length > 40 ? '...' : '');
+            } else if (messages[0].role === 'user') {
+                // For user messages, show the question
+                previewText = messages[0].content.substring(0, 40) + (messages[0].content.length > 40 ? '...' : '');
+            }
         }
     } catch (error) {
-        console.error('Error fetching message preview:', error);
+        console.error('Error fetching message preview for session', session.id, ':', error);
     }
     
     // Format the date

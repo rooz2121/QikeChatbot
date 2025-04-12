@@ -88,6 +88,10 @@ async function loadChatHistory() {
 // Load messages for a specific session
 async function loadSessionMessages(sessionId) {
     try {
+        console.log('Loading messages for session:', sessionId);
+        const conversationMessages = document.getElementById('conversationMessages');
+        conversationMessages.innerHTML = '<div class="loading-indicator"><div class="spinner"></div><p>Loading messages...</p></div>';
+        
         const { data: messages, error } = await supabase
             .from('messages')
             .select('*')
@@ -96,14 +100,39 @@ async function loadSessionMessages(sessionId) {
             
         if (error) throw error;
         
-        const conversationMessages = document.getElementById('conversationMessages');
+        console.log('Retrieved messages:', messages);
         conversationMessages.innerHTML = '';
         
         if (messages && messages.length > 0) {
+            // Group messages by date for better organization
+            const messagesByDate = {};
             messages.forEach(message => {
-                const messageElement = createMessageElement(message);
-                conversationMessages.appendChild(messageElement);
+                const date = new Date(message.created_at).toLocaleDateString();
+                if (!messagesByDate[date]) {
+                    messagesByDate[date] = [];
+                }
+                messagesByDate[date].push(message);
             });
+            
+            // Iterate through dates and create date separators and messages
+            Object.keys(messagesByDate).forEach(date => {
+                // Add date separator
+                const dateSeparator = document.createElement('div');
+                dateSeparator.classList.add('date-separator');
+                dateSeparator.textContent = date;
+                conversationMessages.appendChild(dateSeparator);
+                
+                // Add messages for this date
+                messagesByDate[date].forEach(message => {
+                    const messageElement = createMessageElement(message);
+                    conversationMessages.appendChild(messageElement);
+                });
+            });
+            
+            // Scroll to the bottom after adding all messages
+            setTimeout(() => {
+                conversationMessages.scrollTop = conversationMessages.scrollHeight;
+            }, 100);
         } else {
             conversationMessages.innerHTML = '<div class="no-messages">No messages in this conversation</div>';
         }
@@ -114,16 +143,46 @@ async function loadSessionMessages(sessionId) {
     }
 }
 
+// Function to process code blocks separately from regular text
+function processCodeBlocks(content) {
+    const codeBlockRegex = /```([\w-]*)?\n?([\s\S]*?)```/g;
+    const codeBlocks = [];
+    let processedText = content;
+    
+    // Extract code blocks
+    let match;
+    while ((match = codeBlockRegex.exec(content)) !== null) {
+        const language = match[1] || 'plaintext';
+        const code = match[2];
+        codeBlocks.push({ language, code });
+    }
+    
+    return { text: processedText, codeBlocks };
+}
+
 // Create a message element
 function createMessageElement(message) {
+    console.log('Creating message element:', message);
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message');
     messageDiv.classList.add(message.role === 'user' ? 'user-message' : 'bot-message');
+    messageDiv.dataset.messageId = message.id;
     
     const contentDiv = document.createElement('div');
     contentDiv.classList.add('message-content');
     
+    // Add role indicator for better visual distinction
+    const roleIndicator = document.createElement('div');
+    roleIndicator.classList.add('role-indicator');
+    roleIndicator.innerHTML = message.role === 'user' ? 
+        '<i class="fas fa-user"></i>' : 
+        '<i class="fas fa-robot"></i>';
+    messageDiv.appendChild(roleIndicator);
+    
     if (message.role === 'assistant') {
+        // Extract code blocks for special handling
+        const processedContent = processCodeBlocks(message.content);
+        
         // Configure marked.js options
         marked.setOptions({
             breaks: true,
@@ -133,11 +192,48 @@ function createMessageElement(message) {
         });
         
         // Process markdown
-        contentDiv.innerHTML = marked.parse(message.content);
+        contentDiv.innerHTML = marked.parse(processedContent.text);
         
         // Apply syntax highlighting to code blocks
         contentDiv.querySelectorAll('pre code').forEach(block => {
             hljs.highlightElement(block);
+            
+            // Add copy button to code blocks
+            const preElement = block.parentElement;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'code-block-wrapper';
+            
+            const header = document.createElement('div');
+            header.className = 'code-block-header';
+            
+            // Detect language
+            let language = block.className.replace('language-', '');
+            if (!language || language === 'hljs') {
+                language = 'code';
+            }
+            
+            const langIndicator = document.createElement('span');
+            langIndicator.className = 'code-language';
+            langIndicator.textContent = language;
+            header.appendChild(langIndicator);
+            
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+            copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(block.textContent);
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => {
+                    copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                }, 2000);
+            });
+            header.appendChild(copyBtn);
+            
+            // Replace pre with wrapper
+            const parent = preElement.parentElement;
+            wrapper.appendChild(header);
+            wrapper.appendChild(preElement);
+            parent.appendChild(wrapper);
         });
     } else {
         // For user messages, just use text content
