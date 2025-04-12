@@ -75,16 +75,16 @@ document.addEventListener('DOMContentLoaded', () => {
             // Check if user settings exist, create if not
             checkUserSettings(session.user.id);
             
-            // Update user profile information (but preserve styling)
-            updateUserProfile(session.user, true);
+            // Update user profile information
+            updateUserProfile(session.user);
             
             if (chatContainerVisible) {
                 // We're already in the chat interface (from guest mode)
                 // Just load the user's data and update the UI
                 console.log('Already in chat interface, loading user data');
                 
-                // Load chat history but preserve styling
-                loadChatHistory(session.user.id, true);
+                // Load chat history
+                loadChatHistory(session.user.id);
             } else {
                 // Coming from the landing page
                 // Hide landing page, show chat interface
@@ -95,8 +95,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => {
                         document.getElementById('chatContainer').classList.add('visible');
                         
-                        // Load chat history but preserve styling
-                        loadChatHistory(session.user.id, true);
+                        // Load chat history
+                        loadChatHistory(session.user.id);
                     }, 50);
                 }, 500);
             }
@@ -195,8 +195,8 @@ async function checkUserSettings(userId) {
 }
 
 // Function to load user's chat history
-async function loadChatHistory(userId, preserveStyle = false) {
-    console.log('Loading chat history for user ID:', userId, 'preserveStyle:', preserveStyle);
+async function loadChatHistory(userId) {
+    console.log('Loading chat history for user ID:', userId);
     try {
         // Get all chat sessions for the user
         const { data: sessions, error } = await window.supabaseClient
@@ -209,34 +209,12 @@ async function loadChatHistory(userId, preserveStyle = false) {
         
         console.log('Retrieved chat sessions:', sessions);
         
-        // Get the history list element
+        // Clear existing history items
         const historyList = document.querySelector('.history-list');
         
         if (!historyList) {
             console.error('History list element not found');
             return;
-        }
-        
-        // Store original styles if preserving them
-        let originalStyles = {};
-        if (preserveStyle) {
-            // Store history container styles
-            originalStyles.historyListStyle = historyList.style.cssText;
-            originalStyles.historyListClass = historyList.className;
-            
-            // Store parent container styles
-            const historyContainer = document.querySelector('.history-container');
-            if (historyContainer) {
-                originalStyles.historyContainerStyle = historyContainer.style.cssText;
-                originalStyles.historyContainerClass = historyContainer.className;
-            }
-            
-            // Store any active history items for reference
-            const activeItems = historyList.querySelectorAll('.history-item.active');
-            if (activeItems.length > 0) {
-                originalStyles.activeItemStyle = activeItems[0].style.cssText;
-                originalStyles.activeItemClass = activeItems[0].className;
-            }
         }
         
         // Add loading indicator
@@ -324,37 +302,6 @@ async function loadChatHistory(userId, preserveStyle = false) {
             // Append all items at once
             historyList.appendChild(fragment);
             
-            // Restore original styles if preserving them
-            if (preserveStyle) {
-                // Restore history list styles
-                if (originalStyles.historyListStyle) {
-                    historyList.style.cssText = originalStyles.historyListStyle;
-                }
-                if (originalStyles.historyListClass) {
-                    historyList.className = originalStyles.historyListClass;
-                }
-                
-                // Restore parent container styles
-                const historyContainer = document.querySelector('.history-container');
-                if (historyContainer) {
-                    if (originalStyles.historyContainerStyle) {
-                        historyContainer.style.cssText = originalStyles.historyContainerStyle;
-                    }
-                    if (originalStyles.historyContainerClass) {
-                        historyContainer.className = originalStyles.historyContainerClass;
-                    }
-                }
-                
-                // Apply original active item styles to the first history item if it exists
-                if (originalStyles.activeItemStyle && originalStyles.activeItemClass) {
-                    const firstHistoryItem = historyList.querySelector('.history-item');
-                    if (firstHistoryItem) {
-                        firstHistoryItem.style.cssText = originalStyles.activeItemStyle;
-                        firstHistoryItem.className = originalStyles.activeItemClass;
-                    }
-                }
-            }
-            
             // If there are sessions, load the most recent one
             if (sessions.length > 0) {
                 loadChatSession(sessions[0].id);
@@ -362,12 +309,6 @@ async function loadChatHistory(userId, preserveStyle = false) {
         } else {
             // No sessions, either show a message or create a new one
             historyList.innerHTML = '<div class="no-history">No chat history yet.<br>Start a new conversation!</div>';
-            
-            // Restore original styles if preserving them
-            if (preserveStyle && originalStyles.historyListStyle) {
-                historyList.style.cssText = originalStyles.historyListStyle;
-            }
-            
             // Create a new session after a short delay
             setTimeout(() => {
                 createNewChatSession();
@@ -695,37 +636,12 @@ async function saveMessageToDatabase(text, role) {
 }
 
 // Function to update user profile in the UI
-function updateUserProfile(user, preserveStyle = false) {
-    console.log('Updating user profile with:', user, 'preserveStyle:', preserveStyle);
+function updateUserProfile(user) {
+    console.log('Updating user profile with:', user);
     
     const userNameElement = document.getElementById('userName');
     const userEmailElement = document.getElementById('userEmail');
     const userAvatarElement = document.getElementById('userAvatar');
-    
-    // Store original styles if preserving them
-    let originalStyles = {};
-    if (preserveStyle) {
-        // Capture current styles before changing them
-        if (userNameElement) {
-            originalStyles.userNameStyle = userNameElement.style.cssText;
-            originalStyles.userNameClass = userNameElement.className;
-        }
-        if (userEmailElement) {
-            originalStyles.userEmailStyle = userEmailElement.style.cssText;
-            originalStyles.userEmailClass = userEmailElement.className;
-        }
-        if (userAvatarElement) {
-            originalStyles.userAvatarStyle = userAvatarElement.style.cssText;
-            originalStyles.userAvatarClass = userAvatarElement.className;
-        }
-        
-        // Store any other relevant styles from parent containers
-        const userProfile = document.querySelector('.user-profile');
-        if (userProfile) {
-            originalStyles.userProfileStyle = userProfile.style.cssText;
-            originalStyles.userProfileClass = userProfile.className;
-        }
-    }
     
     if (userNameElement && userEmailElement && userAvatarElement) {
         // Set user name - use user_metadata.full_name if available, otherwise use email
@@ -743,27 +659,6 @@ function updateUserProfile(user, preserveStyle = false) {
             const initials = displayName.split(' ').map(name => name[0]).join('').toUpperCase();
             userAvatarElement.src = `https://ui-avatars.com/api/?name=${initials}&background=7C3AED&color=fff`;
         }
-        
-        // Restore original styles if preserving them
-        if (preserveStyle) {
-            if (originalStyles.userNameStyle) userNameElement.style.cssText = originalStyles.userNameStyle;
-            if (originalStyles.userNameClass) userNameElement.className = originalStyles.userNameClass;
-            
-            if (originalStyles.userEmailStyle) userEmailElement.style.cssText = originalStyles.userEmailStyle;
-            if (originalStyles.userEmailClass) userEmailElement.className = originalStyles.userEmailClass;
-            
-            if (originalStyles.userAvatarStyle) userAvatarElement.style.cssText = originalStyles.userAvatarStyle;
-            if (originalStyles.userAvatarClass) userAvatarElement.className = originalStyles.userAvatarClass;
-            
-            // Restore parent container styles
-            const userProfile = document.querySelector('.user-profile');
-            if (userProfile && originalStyles.userProfileStyle) {
-                userProfile.style.cssText = originalStyles.userProfileStyle;
-            }
-            if (userProfile && originalStyles.userProfileClass) {
-                userProfile.className = originalStyles.userProfileClass;
-            }
-        }
     } else {
         console.error('User profile elements not found in the DOM');
         // Try again after a short delay in case the DOM isn't fully loaded
@@ -774,7 +669,7 @@ function updateUserProfile(user, preserveStyle = false) {
             
             if (retryUserName && retryUserEmail && retryUserAvatar) {
                 console.log('Retrying update user profile');
-                updateUserProfile(user, preserveStyle);
+                updateUserProfile(user);
             }
         }, 500);
     }
