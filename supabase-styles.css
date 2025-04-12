@@ -9,6 +9,7 @@
     background-color: rgba(30, 30, 40, 0.6);
     margin-bottom: 0.5rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    position: relative;
 }
 
 .user-avatar {
@@ -73,6 +74,34 @@
     color: #fff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     z-index: 1;
+}
+
+/* Guest Mode Styles */
+.guest-signin-btn {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    background: linear-gradient(135deg, #4285F4, #34A853);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.guest-signin-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.guest-signin-btn i {
+    font-size: 0.9rem;
 }
 .history-header {
     display: flex;
