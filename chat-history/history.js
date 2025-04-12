@@ -36,16 +36,26 @@ async function loadChatHistory() {
         // Get user's chat sessions from Supabase
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
+            console.error('No user session found, redirecting to login');
             window.location.href = '../index.html';
             return;
         }
         
+        const userId = session.user.id;
+        console.log('Loading chat history for user ID:', userId);
+        
         const { data: sessions, error } = await supabase
             .from('chat_sessions')
             .select('*')
+            .eq('user_id', userId) // Filter by user_id
             .order('updated_at', { ascending: false });
             
-        if (error) throw error;
+        if (error) {
+            console.error('Error fetching chat sessions:', error);
+            throw error;
+        }
+        
+        console.log('Retrieved chat sessions:', sessions);
         
         // Get the history list container
         const historyList = document.getElementById('historyList');

@@ -348,17 +348,48 @@ async function loadChatSession(sessionId) {
 // Function to create a new chat session
 async function createNewChatSession() {
     try {
+        console.log('Creating new chat session');
+        
+        // Get current user session
+        const { data: { session: userSession } } = await window.supabaseClient.auth.getSession();
+        
+        if (!userSession || !userSession.user) {
+            console.error('No user session found when creating chat session');
+            return null;
+        }
+        
+        const userId = userSession.user.id;
+        console.log('Creating chat session for user:', userId);
+        
+        // Create new chat session with user_id
         const { data: session, error } = await window.supabaseClient
             .from('chat_sessions')
-            .insert([{ title: 'New Chat' }])
+            .insert([{ 
+                title: 'New Chat', 
+                user_id: userId,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            }])
             .select()
             .single();
             
-        if (error) throw error;
+        if (error) {
+            console.error('Error inserting new chat session:', error);
+            throw error;
+        }
+        
+        console.log('Successfully created new chat session:', session);
         
         // Update UI with new session
-        const historyItem = createHistoryItem(session);
+        const historyItem = await createHistoryItem(session);
         const historyList = document.querySelector('.history-list');
+        
+        if (!historyList) {
+            console.error('History list not found');
+            return session.id;
+        }
+        
+        historyList.innerHTML = historyList.innerHTML.replace('<div class="no-history">No chat history yet.<br>Start a new conversation!</div>', '');
         historyList.prepend(historyItem);
         
         // Set as active session
@@ -368,10 +399,13 @@ async function createNewChatSession() {
         historyItem.classList.add('active');
         
         // Clear chat messages
-        document.getElementById('chatMessages').innerHTML = '';
-        
-        // Add welcome message
-        addMessageToUI("Hello! I'm Quike, your AI assistant. How can I help you today?", 'assistant');
+        const chatMessages = document.getElementById('chatMessages');
+        if (chatMessages) {
+            chatMessages.innerHTML = '';
+            
+            // Add welcome message
+            addMessageToUI("Hello! I'm Quike, your AI assistant. How can I help you today?", 'assistant');
+        }
         
         // Store current session ID
         window.currentSessionId = session.id;
@@ -441,32 +475,61 @@ function addMessageToUI(text, sender) {
 
 // Function to save a message to the database
 async function saveMessageToDatabase(text, role) {
+    console.log(`Saving message to database. Role: ${role}, CurrentSessionId: ${window.currentSessionId}`);
+    
     if (!window.currentSessionId) {
+        console.log('No current session ID found, creating new chat session');
         // Create a new session if none exists
         const sessionId = await createNewChatSession();
-        if (!sessionId) return;
+        if (!sessionId) {
+            console.error('Failed to create new chat session');
+            return;
+        }
         window.currentSessionId = sessionId;
+        console.log('Created new session ID:', sessionId);
     }
     
     try {
-        const { error } = await window.supabaseClient
+        // Prepare message data
+        const messagePayload = {
+            session_id: window.currentSessionId,
+            content: text,
+            role: role,
+            created_at: new Date().toISOString()
+        };
+        
+        console.log('Inserting message with data:', messagePayload);
+        
+        // Insert message
+        const { data: savedMessage, error: messageError } = await window.supabaseClient
             .from('messages')
-            .insert([{
-                session_id: window.currentSessionId,
-                content: text,
-                role: role
-            }]);
+            .insert([messagePayload])
+            .select();
             
-        if (error) throw error;
+        if (messageError) {
+            console.error('Error inserting message:', messageError);
+            throw messageError;
+        }
+        
+        console.log('Message saved successfully:', savedMessage);
         
         // Update the session's updated_at timestamp
-        await window.supabaseClient
+        const { error: updateError } = await window.supabaseClient
             .from('chat_sessions')
             .update({ updated_at: new Date().toISOString() })
             .eq('id', window.currentSessionId);
             
+        if (updateError) {
+            console.error('Error updating session timestamp:', updateError);
+        } else {
+            console.log('Session timestamp updated successfully');
+        }
+        
+        // Return the saved message data
+        return savedMessage;
     } catch (error) {
         console.error('Error saving message:', error.message);
+        return null;
     }
 }
 

@@ -99,11 +99,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to add a message to the chat
     function addMessage(text, sender, saveToDb = false) {
+        console.log(`Adding message from ${sender}, saveToDb:`, saveToDb);
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message', `${sender}-message`);
         
         const contentDiv = document.createElement('div');
         contentDiv.classList.add('message-content');
+        
+        // Save to database if requested
+        if (saveToDb && window.supabaseAuth && typeof window.supabaseAuth.saveMessageToDatabase === 'function') {
+            console.log('Saving message to database:', text);
+            window.supabaseAuth.saveMessageToDatabase(text, sender === 'user' ? 'user' : 'assistant');
+        } else if (saveToDb) {
+            console.error('Could not save message to database: supabaseAuth not available');
+        }
         
         if (sender === 'bot') {
             // Extract code blocks
