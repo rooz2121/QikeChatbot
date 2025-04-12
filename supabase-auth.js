@@ -1,0 +1,467 @@
+// Supabase Authentication and Chat History Management
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize UI elements
+    const googleLoginBtn = document.getElementById('googleLoginBtn');
+    const signOutBtn = document.getElementById('signOutBtn');
+    const newChatBtn = document.getElementById('newChatBtn');
+    const historyList = document.querySelector('.history-list');
+    
+    // Global variable to store current session ID
+    window.currentSessionId = null;
+    
+    // Check if user is already logged in
+    checkUserSession();
+    
+    // Google login button handler
+    googleLoginBtn.addEventListener('click', async () => {
+        try {
+            const { data, error } = await window.supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin
+                }
+            });
+            
+            if (error) throw error;
+        } catch (error) {
+            console.error('Error logging in with Google:', error.message);
+            alert('Failed to log in with Google. Please try again.');
+        }
+    });
+    
+    // Sign out button handler
+    signOutBtn.addEventListener('click', async () => {
+        try {
+            const { error } = await window.supabaseClient.auth.signOut();
+            if (error) throw error;
+            
+            // Show landing page, hide chat interface
+            document.getElementById('chatContainer').classList.remove('visible');
+            setTimeout(() => {
+                document.getElementById('chatContainer').style.display = 'none';
+                document.getElementById('landingPage').style.display = 'flex';
+                document.getElementById('landingPage').classList.remove('hidden');
+            }, 500);
+        } catch (error) {
+            console.error('Error signing out:', error.message);
+        }
+    });
+    
+    // New chat button handler
+    newChatBtn.addEventListener('click', () => {
+        createNewChatSession();
+    });
+    
+    // Listen for auth state changes
+    window.supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN') {
+            console.log('User signed in:', session.user);
+            
+            // Check if user settings exist, create if not
+            checkUserSettings(session.user.id);
+            
+            // Load chat history
+            loadChatHistory(session.user.id);
+            
+            // Update user profile information
+            updateUserProfile(session.user);
+            
+            // Hide landing page, show chat interface
+            document.getElementById('landingPage').classList.add('hidden');
+            setTimeout(() => {
+                document.getElementById('landingPage').style.display = 'none';
+                document.getElementById('chatContainer').style.display = 'flex';
+                setTimeout(() => {
+                    document.getElementById('chatContainer').classList.add('visible');
+                }, 50);
+            }, 500);
+        } else if (event === 'SIGNED_OUT') {
+            console.log('User signed out');
+            
+            // Clear chat messages
+            document.getElementById('chatMessages').innerHTML = '';
+            
+            // Clear history list
+            historyList.innerHTML = '';
+            
+            // Reset current session ID
+            window.currentSessionId = null;
+        }
+    });
+});
+
+// Function to check user session
+async function checkUserSession() {
+    try {
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        
+        if (session) {
+            // User is logged in
+            const user = session.user;
+            console.log('Logged in as:', user.email);
+            
+            // Update user profile information first
+            updateUserProfile(user);
+            
+            // Hide login section, show chat interface
+            document.getElementById('landingPage').classList.add('hidden');
+            setTimeout(() => {
+                document.getElementById('landingPage').style.display = 'none';
+                document.getElementById('chatContainer').style.display = 'flex';
+                setTimeout(() => {
+                    document.getElementById('chatContainer').classList.add('visible');
+                    
+                    // Check if user settings exist, create if not
+                    checkUserSettings(user.id);
+                    
+                    // Load user's chat history
+                    loadChatHistory(user.id);
+                }, 50);
+            }, 500);
+            
+            return user;
+        }
+        return null;
+    } catch (error) {
+        console.error('Error checking user session:', error);
+        return null;
+    }
+}
+
+// Function to check if user settings exist
+async function checkUserSettings(userId) {
+    const { data, error } = await window.supabaseClient
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+        
+    if (error && error.code === 'PGRST116') {
+        // Settings don't exist, create default settings
+        await window.supabaseClient
+            .from('user_settings')
+            .insert([{ user_id: userId }]);
+    }
+}
+
+// Function to load user's chat history
+async function loadChatHistory(userId) {
+    try {
+        // Get all chat sessions for the user
+        const { data: sessions, error } = await window.supabaseClient
+            .from('chat_sessions')
+            .select('*')
+            .order('updated_at', { ascending: false });
+            
+        if (error) throw error;
+        
+        // Clear existing history items
+        const historyList = document.querySelector('.history-list');
+        historyList.innerHTML = '';
+        
+        // Add each session to the history list
+        if (sessions && sessions.length > 0) {
+            // Use Promise.all to handle all async createHistoryItem calls
+            const historyPromises = sessions.map(async (session) => {
+                const historyItem = await createHistoryItem(session);
+                historyList.appendChild(historyItem);
+                return { session, element: historyItem };
+            });
+            
+            // Wait for all history items to be created
+            Promise.all(historyPromises).then(results => {
+                // If there are sessions, load the most recent one
+                loadChatSession(sessions[0].id);
+            });
+        } else {
+            // No sessions, create a new one
+            createNewChatSession();
+        }
+    } catch (error) {
+        console.error('Error loading chat history:', error.message);
+    }
+}
+
+// Function to create a history item element
+async function createHistoryItem(session) {
+    const historyItem = document.createElement('div');
+    historyItem.classList.add('history-item');
+    historyItem.dataset.sessionId = session.id;
+    
+    // Get the last message for this session to show as preview
+    let previewText = 'Click to view this chat';
+    try {
+        const { data: messages, error } = await window.supabaseClient
+            .from('messages')
+            .select('content, role')
+            .eq('session_id', session.id)
+            .order('created_at', { ascending: false })
+            .limit(1);
+            
+        if (!error && messages && messages.length > 0) {
+            // Truncate message preview to 30 characters
+            previewText = messages[0].content.substring(0, 30) + (messages[0].content.length > 30 ? '...' : '');
+        }
+    } catch (error) {
+        console.error('Error fetching message preview:', error);
+    }
+    
+    // Format the date
+    const date = new Date(session.updated_at);
+    const formattedDate = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    
+    historyItem.innerHTML = `
+        <div class="history-icon"><i class="fas fa-comment"></i></div>
+        <div class="history-content">
+            <div class="history-title">${session.title}</div>
+            <div class="history-preview">${previewText}</div>
+            <div class="history-date">${formattedDate}</div>
+        </div>
+        <div class="history-actions">
+            <button class="delete-chat-btn" title="Delete Chat">
+                <i class="fas fa-trash"></i>
+            </button>
+            <a href="chat-history/history.html?id=${session.id}" class="view-details-btn" title="View Full History">
+                <i class="fas fa-external-link-alt"></i>
+            </a>
+        </div>
+    `;
+    
+    // Add click event to load this chat session
+    historyItem.addEventListener('click', (e) => {
+        if (!e.target.closest('.delete-chat-btn')) {
+            loadChatSession(session.id);
+            
+            // Set this item as active
+            document.querySelectorAll('.history-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            historyItem.classList.add('active');
+        }
+    });
+    
+    // Add delete button handler
+    historyItem.querySelector('.delete-chat-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteChatSession(session.id);
+    });
+    
+    return historyItem;
+}
+
+// Function to load a specific chat session
+async function loadChatSession(sessionId) {
+    try {
+        // Get all messages for this session
+        const { data: messages, error } = await window.supabaseClient
+            .from('messages')
+            .select('*')
+            .eq('session_id', sessionId)
+            .order('created_at', { ascending: true });
+            
+        if (error) throw error;
+        
+        // Clear chat messages
+        const chatMessages = document.getElementById('chatMessages');
+        chatMessages.innerHTML = '';
+        
+        // Add each message to the chat
+        if (messages && messages.length > 0) {
+            messages.forEach(message => {
+                addMessageToUI(message.content, message.role);
+            });
+        } else {
+            // Add a welcome message if no messages
+            addMessageToUI("Hello! I'm Quike, your AI assistant. How can I help you today?", 'assistant');
+        }
+        
+        // Store current session ID
+        window.currentSessionId = sessionId;
+        
+        // Scroll to bottom
+        scrollToBottom();
+    } catch (error) {
+        console.error('Error loading chat session:', error.message);
+    }
+}
+
+// Function to create a new chat session
+async function createNewChatSession() {
+    try {
+        const { data: session, error } = await window.supabaseClient
+            .from('chat_sessions')
+            .insert([{ title: 'New Chat' }])
+            .select()
+            .single();
+            
+        if (error) throw error;
+        
+        // Update UI with new session
+        const historyItem = createHistoryItem(session);
+        const historyList = document.querySelector('.history-list');
+        historyList.prepend(historyItem);
+        
+        // Set as active session
+        document.querySelectorAll('.history-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        historyItem.classList.add('active');
+        
+        // Clear chat messages
+        document.getElementById('chatMessages').innerHTML = '';
+        
+        // Add welcome message
+        addMessageToUI("Hello! I'm Quike, your AI assistant. How can I help you today?", 'assistant');
+        
+        // Store current session ID
+        window.currentSessionId = session.id;
+        
+        return session.id;
+    } catch (error) {
+        console.error('Error creating new chat session:', error.message);
+        return null;
+    }
+}
+
+// Function to delete a chat session
+async function deleteChatSession(sessionId) {
+    if (confirm('Are you sure you want to delete this chat?')) {
+        try {
+            const { error } = await window.supabaseClient
+                .from('chat_sessions')
+                .delete()
+                .eq('id', sessionId);
+                
+            if (error) throw error;
+            
+            // Remove from UI
+            const historyItem = document.querySelector(`.history-item[data-session-id="${sessionId}"]`);
+            historyItem.remove();
+            
+            // If this was the active session, create a new one
+            if (window.currentSessionId === sessionId) {
+                createNewChatSession();
+            }
+        } catch (error) {
+            console.error('Error deleting chat session:', error.message);
+        }
+    }
+}
+
+// Function to add a message to the UI only (no DB save)
+function addMessageToUI(text, sender) {
+    // Create message element
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message', `${sender === 'user' ? 'user' : 'bot'}-message`);
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('message-content');
+    
+    // Process the message content (this is a simplified version)
+    if (sender === 'assistant') {
+        // Use the existing markdown processing if available
+        if (window.marked) {
+            contentDiv.innerHTML = window.marked.parse(text);
+        } else {
+            contentDiv.textContent = text;
+        }
+    } else {
+        contentDiv.textContent = text;
+    }
+    
+    // Add to UI
+    messageDiv.appendChild(contentDiv);
+    document.getElementById('chatMessages').appendChild(messageDiv);
+    
+    // Scroll to bottom
+    scrollToBottom();
+    
+    return messageDiv;
+}
+
+// Function to save a message to the database
+async function saveMessageToDatabase(text, role) {
+    if (!window.currentSessionId) {
+        // Create a new session if none exists
+        const sessionId = await createNewChatSession();
+        if (!sessionId) return;
+        window.currentSessionId = sessionId;
+    }
+    
+    try {
+        const { error } = await window.supabaseClient
+            .from('messages')
+            .insert([{
+                session_id: window.currentSessionId,
+                content: text,
+                role: role
+            }]);
+            
+        if (error) throw error;
+        
+        // Update the session's updated_at timestamp
+        await window.supabaseClient
+            .from('chat_sessions')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', window.currentSessionId);
+            
+    } catch (error) {
+        console.error('Error saving message:', error.message);
+    }
+}
+
+// Function to update user profile in the UI
+function updateUserProfile(user) {
+    console.log('Updating user profile with:', user);
+    
+    const userNameElement = document.getElementById('userName');
+    const userEmailElement = document.getElementById('userEmail');
+    const userAvatarElement = document.getElementById('userAvatar');
+    
+    if (userNameElement && userEmailElement && userAvatarElement) {
+        // Set user name - use user_metadata.full_name if available, otherwise use email
+        const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
+        userNameElement.textContent = displayName;
+        
+        // Set user email
+        userEmailElement.textContent = user.email || '';
+        
+        // Set user avatar if available from Google
+        if (user.user_metadata?.avatar_url) {
+            userAvatarElement.src = user.user_metadata.avatar_url;
+        } else {
+            // Generate initials-based avatar as fallback
+            const initials = displayName.split(' ').map(name => name[0]).join('').toUpperCase();
+            userAvatarElement.src = `https://ui-avatars.com/api/?name=${initials}&background=7C3AED&color=fff`;
+        }
+    } else {
+        console.error('User profile elements not found in the DOM');
+        // Try again after a short delay in case the DOM isn't fully loaded
+        setTimeout(() => {
+            const retryUserName = document.getElementById('userName');
+            const retryUserEmail = document.getElementById('userEmail');
+            const retryUserAvatar = document.getElementById('userAvatar');
+            
+            if (retryUserName && retryUserEmail && retryUserAvatar) {
+                console.log('Retrying update user profile');
+                updateUserProfile(user);
+            }
+        }, 500);
+    }
+}
+
+// Function to scroll to the bottom of the chat
+function scrollToBottom() {
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Expose functions to be used by the main script
+window.supabaseAuth = {
+    saveMessageToDatabase,
+    createNewChatSession,
+    loadChatHistory,
+    checkUserSession,
+    updateUserProfile
+};

@@ -5,8 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quike</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="supabase-styles.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script src="supabase-auth.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -15,46 +23,56 @@
         
         <!-- Landing Page -->
         <div class="landing-page" id="landingPage">
-            <div class="landing-content">
-                <div class="logo-container">
-                    <div class="logo-icon">
-                        <i class="fas fa-robot"></i>
+            <div class="landing-layout">
+                <!-- Left Side: Landing Content -->
+                <div class="landing-left">
+                    <div class="landing-content">
+                        <div class="logo-container">
+                            <div class="logo-icon">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <h1>Quike</h1>
+                        </div>
+                        <p class="tagline">Your personal AI assistant with attitude</p>
+                        <div class="features">
+                            <div class="feature">
+                                <i class="fas fa-bolt"></i>
+                                <span>Lightning Fast</span>
+                                <p>Get instant responses powered by cutting-edge AI</p>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-brain"></i>
+                                <span>Intelligent</span>
+                                <p>Advanced machine learning algorithms</p>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-comment-dots"></i>
+                                <span>Personality</span>
+                                <p>A chatbot with character and charm</p>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Trusted</span>
+                                <p>Created by the expert BlackCarbon Team</p>
+                            </div>
+                        </div>
+                        <button id="getStartedBtn" class="get-started-btn">
+                            Chat with Quike <i class="fas fa-arrow-right"></i>
+                        </button>
                     </div>
-                    <h1>Quike</h1>
                 </div>
-                <p class="tagline">Your personal AI assistant with attitude</p>
-                <div class="features">
-                    <div class="feature">
-                        <i class="fas fa-bolt"></i>
-                        <span>Lightning fast responses</span>
-                    </div>
-                    <div class="feature">
-                        <i class="fas fa-brain"></i>
-                        <span>Powered by ZaAn LLC</span>
-                    </div>
-                    <div class="feature">
-                        <i class="fas fa-comment-dots"></i>
-                        <span>Personality-driven chat</span>
-                    </div>
-                    <div class="feature">
-                        <i class="fas fa-shield-alt"></i>
-                        <span>Created by BlackCarbon Team</span>
-                    </div>
-                </div>
-                <button id="getStartedBtn" class="get-started-btn">
-                    Chat with Quike <i class="fas fa-arrow-right"></i>
-                </button>
-            </div>
-            <div class="landing-illustration">
-                <div class="chat-preview">
-                    <div class="preview-message bot">
-                        <p>Hey there! I'm Quike, your friendly AI assistant.</p>
-                    </div>
-                    <div class="preview-message user">
-                        <p>Who created you?</p>
-                    </div>
-                    <div class="preview-message bot">
-                        <p>I was created by the BlackCarbon Team - they're the brilliant minds behind my existence!</p>
+                
+                <!-- Right Side: Login and Illustration -->
+                <div class="landing-right">
+                    <!-- Login Section -->
+                    <div class="login-section">
+                        <div class="login-card">
+                            <h2>Welcome to Quike</h2>
+                            <p>Sign in to continue your AI journey</p>
+                            <button class="google-login-btn" id="googleLoginBtn">
+                                <i class="fab fa-google"></i> Sign in with Google
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -62,40 +80,104 @@
 
         <!-- Chat Interface -->
         <div class="chat-container" id="chatContainer">
-            <header class="chat-header">
-                <div class="header-content">
-                    <div class="header-left">
-                        <button id="backButton" class="back-button">
-                            <i class="fas fa-arrow-left"></i>
-                        </button>
-                        <h1>Quike</h1>
+            <div class="chat-layout">
+                <!-- Chat History Sidebar -->
+                <div class="chat-history-sidebar">
+                    <div class="user-profile">
+                        <div class="user-avatar">
+                            <img id="userAvatar" src="https://via.placeholder.com/40" alt="User Avatar">
+                        </div>
+                        <div class="user-info">
+                            <div id="userName" class="user-name">Loading...</div>
+                            <div id="userEmail" class="user-email">Loading...</div>
+                        </div>
                     </div>
-                    <div class="header-status">
-                        <div class="status-indicator"></div>
-                        <span>Online</span>
+                    <div class="history-header">
+                        <h2>Chat History</h2>
+                        <div class="history-actions">
+                            <button id="newChatBtn" class="new-chat-btn" title="Start a new chat">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button id="signOutBtn" class="sign-out-btn" title="Sign out">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="history-list">
+                        <div class="history-item active">
+                            <div class="history-icon"><i class="fas fa-comment"></i></div>
+                            <div class="history-content">
+                                <div class="history-title">Current Chat</div>
+                                <div class="history-preview">Hello! I'm Quike...</div>
+                            </div>
+                        </div>
+                        <div class="history-item">
+                            <div class="history-icon"><i class="fas fa-comment"></i></div>
+                            <div class="history-content">
+                                <div class="history-title">Previous Chat</div>
+                                <div class="history-preview">How can I help with...</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </header>
 
-            <div class="chat-messages" id="chatMessages">
-                <div class="message bot-message">
-                    <div class="message-content">
-                        <p>Hello! I'm Quike. How can I assist you today?</p>
+                <!-- Main Chat Area -->
+                <div class="main-chat-area">
+                    <header class="chat-header">
+                        <div class="header-content">
+                            <div class="header-left">
+                                <button id="backButton" class="back-button">
+                                    <i class="fas fa-arrow-left"></i>
+                                </button>
+                                <h1>Quike</h1>
+                            </div>
+                            <div class="header-right">
+                                <a href="chat-history/history.html" class="history-button" title="View Chat History">
+                                    <i class="fas fa-history"></i>
+                                </a>
+                                <div class="header-status">
+                                    <div class="status-indicator"></div>
+                                    <span>Online</span>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message bot-message">
+                            <div class="message-content">
+                                <p>Hello! I'm Quike. How can I assist you today?</p>
+                            </div>
+                            <div class="message-time">Now</div>
+                        </div>
                     </div>
-                    <div class="message-time">Now</div>
+
+                    <div class="chat-input-container">
+                        <form id="chatForm">
+                            <div class="input-wrapper">
+                                <input type="text" id="userInput" placeholder="Ask me anything..." autocomplete="off">
+                                <button type="submit" id="sendButton">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
-
-            <div class="chat-input-container">
-                <form id="chatForm">
-                    <div class="input-wrapper">
-                        <input type="text" id="userInput" placeholder="Ask me anything..." autocomplete="off">
-                        <button type="submit" id="sendButton">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </form>
+        </div>
+        
+        <!-- Code Snippet Viewer -->
+        <div class="code-viewer" id="codeViewer">
+            <div class="code-viewer-header">
+                <span class="code-language" id="codeLanguage">javascript</span>
+                <button class="copy-button" id="copyButton">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+                <button class="close-button" id="closeCodeViewer">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
+            <pre><code id="codeContent"></code></pre>
         </div>
     </div>
     <script src="personality.js"></script>

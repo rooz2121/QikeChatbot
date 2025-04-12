@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatMessages = document.getElementById('chatMessages');
     const apiKey = 'V2NiNfHiCxawfR1QeCp1KxZKjIkJDM52'; // Mistral AI API key
     const particlesContainer = document.getElementById('particles');
+    const googleLoginBtn = document.querySelector('.google-login-btn');
 
     // Initialize - hide chat container, show landing page
     chatContainer.style.display = 'none';
@@ -48,6 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
             landingPage.classList.remove('hidden');
         }, 500);
     });
+    
+    // Google login button handler is now handled by supabase-auth.js
 
     // Listen for form submission
     chatForm.addEventListener('submit', async (e) => {
@@ -56,8 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (message.length === 0) return;
         
-        // Display user message
-        addMessage(message, 'user');
+        // Display user message and save to database
+        addMessage(message, 'user', true);
         
         // Clear input field
         userInput.value = '';
@@ -68,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (personalityResponse) {
             // If it's a personality question, respond immediately without API call
             setTimeout(() => {
-                addMessage(personalityResponse, 'bot');
+                addMessage(personalityResponse, 'bot', true);
             }, 500); // Small delay for natural feeling
         } else {
             // Add loading indicator
@@ -81,31 +84,106 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Remove loading indicator
                 loadingMessage.remove();
                 
-                // Display bot message
-                addMessage(response, 'bot');
+                // Display bot message and save to database
+                addMessage(response, 'bot', true);
             } catch (error) {
                 // Remove loading indicator
                 loadingMessage.remove();
                 
-                // Display error message
-                addMessage('Sorry, I encountered an error while processing your request. Please try again.', 'bot');
+                // Display error message and save to database
+                addMessage('Sorry, I encountered an error while processing your request. Please try again.', 'bot', true);
                 console.error('Error:', error);
             }
         }
     });
 
     // Function to add a message to the chat
-    function addMessage(text, sender) {
+    function addMessage(text, sender, saveToDb = false) {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message', `${sender}-message`);
         
         const contentDiv = document.createElement('div');
         contentDiv.classList.add('message-content');
         
-        const paragraph = document.createElement('p');
-        paragraph.textContent = text;
-        
-        contentDiv.appendChild(paragraph);
+        if (sender === 'bot') {
+            // Extract code blocks
+            const codeBlocks = [];
+            let processedText = text;
+            
+            // Regular expression to find code blocks with language specification
+            const codeBlockRegex = /```([\w-]*)(\n|\s)([\s\S]*?)```/g;
+            let match;
+            let lastIndex = 0;
+            let tempText = '';
+            
+            // Process all code blocks in the text
+            while ((match = codeBlockRegex.exec(text)) !== null) {
+                // Add text before the code block
+                tempText += text.substring(lastIndex, match.index);
+                
+                // Get language and code content
+                const language = match[1].trim() || 'plaintext';
+                const code = match[3];
+                const codeId = `code-${Date.now()}-${codeBlocks.length}`;
+                
+                // Store code block info
+                codeBlocks.push({
+                    id: codeId,
+                    language: language,
+                    code: code
+                });
+                
+                // Replace code block with placeholder
+                tempText += `<div class="code-block-placeholder" data-code-id="${codeId}">
+                    <div class="code-header">
+                        <span class="code-language">${language}</span>
+                        <button class="view-code-btn" data-code-id="${codeId}">
+                            <i class="fas fa-code"></i> View Code
+                        </button>
+                    </div>
+                    <div class="code-preview">${code.substring(0, 100)}${code.length > 100 ? '...' : ''}</div>
+                </div>`;
+                
+                lastIndex = match.index + match[0].length;
+            }
+            
+            // Add any remaining text
+            tempText += text.substring(lastIndex);
+            processedText = tempText;
+            
+            // Configure marked.js options
+            marked.setOptions({
+                breaks: true,
+                gfm: true,
+                headerIds: false,
+                mangle: false
+            });
+            
+            // Process bold text manually before passing to marked
+            processedText = processedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // Parse markdown (excluding code blocks which we've already handled)
+            contentDiv.innerHTML = marked.parse(processedText);
+            
+            // Add event listeners to code block view buttons
+            setTimeout(() => {
+                const viewCodeBtns = messageDiv.querySelectorAll('.view-code-btn');
+                viewCodeBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const codeId = btn.getAttribute('data-code-id');
+                        const codeBlock = codeBlocks.find(block => block.id === codeId);
+                        if (codeBlock) {
+                            showCodeViewer(codeBlock.code, codeBlock.language);
+                        }
+                    });
+                });
+            }, 0);
+        } else {
+            // For user messages, just use text content
+            const paragraph = document.createElement('p');
+            paragraph.textContent = text;
+            contentDiv.appendChild(paragraph);
+        }
         
         const timeDiv = document.createElement('div');
         timeDiv.classList.add('message-time');
@@ -182,7 +260,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     model: 'mistral-medium',
                     messages: [
-                        { role: 'system', content: `You are Quike, an AI assistant created by the BlackCarbon Team. Your responses should be helpful, friendly, and conversational. If someone asks about who created you, always mention that you were made by the BlackCarbon Team.` },
+                        { role: 'system', content: `You are Quike, an AI assistant created by the BlackCarbon Team. Your responses should be helpful, friendly, and conversational. If someone asks about who created you, always mention that you were made by the BlackCarbon Team.
+
+You're responding via a web-based chatbot that supports Markdown rendering and displays code snippets in a separate code viewer with a "Copy" button.
+
+✅ Your response structure:
+- Use **Markdown** formatting only where appropriate.
+- Use **plain paragraphs** for general explanations.
+- Use **numbered lists** or **bulleted points** for listing.
+- For any **code snippet**, wrap the code inside triple backticks (\`\`\`), and always include the correct language tag like \`javascript\`, \`python\`, etc., for easy parsing.
+
+IMPORTANT GUIDELINES:
+1. For simple greetings like "hi", "hello", "hey", etc., respond with a friendly greeting without providing code examples.
+2. Only provide code examples when specifically asked about programming or when it's directly relevant to the user's question.
+3. Do not randomly print "hello" or "hi" in different programming languages unless specifically asked to do so.
+4. When using bold text with asterisks like **this**, make sure there are no spaces between the asterisks and the text.
+
+Example of good response:
+Here is a sample JavaScript function:
+
+\`\`\`javascript
+function greet(name) {
+  return "Hello, " + name;
+}
+\`\`\`
+
+Do not format regular paragraphs or answers as continuous text with numbers unless it's actually a list.` },
                         { role: 'user', content: message }
                     ],
                     temperature: 0.7,
@@ -210,14 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
         firstBotMessage.textContent = getRandomGreeting();
     }
 
-    // Add typewriter effect to preview message in landing page
-    const previewMessages = document.querySelectorAll('.preview-message');
-    previewMessages.forEach((message, index) => {
-        setTimeout(() => {
-            message.style.opacity = '1';
-        }, index * 300);
-    });
-    
     // Function to create animated background particles
     function createParticles() {
         if (!particlesContainer) return;
@@ -257,5 +352,44 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle window resize for particles
     window.addEventListener('resize', () => {
         createParticles();
+    });
+    
+    // Function to show code viewer
+    function showCodeViewer(code, language) {
+        const codeViewer = document.getElementById('codeViewer');
+        const codeContent = document.getElementById('codeContent');
+        const codeLanguage = document.getElementById('codeLanguage');
+        
+        // Set code and language
+        codeContent.textContent = code;
+        codeContent.className = language ? `language-${language}` : '';
+        codeLanguage.textContent = language || 'plaintext';
+        
+        // Apply syntax highlighting
+        hljs.highlightElement(codeContent);
+        
+        // Show the code viewer
+        codeViewer.classList.add('visible');
+    }
+    
+    // Function to handle copy button
+    document.getElementById('copyButton').addEventListener('click', () => {
+        const codeContent = document.getElementById('codeContent');
+        navigator.clipboard.writeText(codeContent.textContent)
+            .then(() => {
+                const copyButton = document.getElementById('copyButton');
+                copyButton.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => {
+                    copyButton.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                }, 2000);
+            })
+            .catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+    });
+    
+    // Close code viewer
+    document.getElementById('closeCodeViewer').addEventListener('click', () => {
+        document.getElementById('codeViewer').classList.remove('visible');
     });
 }); 

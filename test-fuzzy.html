@@ -109,6 +109,12 @@
             <div class="example" data-example="tell me ur name">tell me ur name</div>
             <div class="example" data-example="whos your creator">whos your creator</div>
             <div class="example" data-example="who bilt u">who bilt u</div>
+            <div class="example" data-example="who is ceo of black carbon">who is ceo of black carbon</div>
+            <div class="example" data-example="tel me about zaheer">tel me about zaheer</div>
+            <div class="example" data-example="who ownz blackcarbon">who ownz blackcarbon</div>
+            <div class="example" data-example="founder of blakcarbon">founder of blakcarbon</div>
+            <div class="example" data-example="who is zahir">who is zahir</div>
+            <div class="example" data-example="tell me about zaher">tell me about zaher</div>
         </div>
         
         <div class="results" id="results">
@@ -152,6 +158,22 @@
                 "who made you",
                 "who built you",
                 "who developed you"
+            ];
+            
+            const founderQuestions = [
+                "who is the founder of blackcarbon",
+                "who is the ceo of blackcarbon",
+                "who owns blackcarbon",
+                "ceo of blackcarbon",
+                "founder of blackcarbon"
+            ];
+            
+            const zaheerQuestions = [
+                "who is zaheer",
+                "tell me about zaheer",
+                "zaheer founder",
+                "zaheer ceo",
+                "about zaheer"
             ];
             
             // Test button click handler
@@ -208,36 +230,53 @@
                     const matchResult = fuzzyMatchAny(input.toLowerCase(), [question]);
                     resultsDiv.appendChild(createResultItem(question, similarity, matchResult));
                 });
+                
+                // Display similarity scores for founder questions
+                resultsDiv.appendChild(createCategoryHeader('Founder/CEO Questions'));
+                founderQuestions.forEach(question => {
+                    const similarity = similarityRatio(input.toLowerCase(), question);
+                    const matchResult = fuzzyMatchAny(input.toLowerCase(), [question]);
+                    resultsDiv.appendChild(createResultItem(question, similarity, matchResult));
+                });
+                
+                // Display similarity scores for Zaheer questions
+                resultsDiv.appendChild(createCategoryHeader('Zaheer Questions'));
+                zaheerQuestions.forEach(question => {
+                    const similarity = similarityRatio(input.toLowerCase(), question);
+                    const matchResult = fuzzyMatchAny(input.toLowerCase(), [question]);
+                    resultsDiv.appendChild(createResultItem(question, similarity, matchResult));
+                });
             }
             
-            // Create a category header
-            function createCategoryHeader(title) {
+            // Function to create category header
+            function createCategoryHeader(text) {
                 const header = document.createElement('h4');
-                header.textContent = title;
+                header.textContent = text;
                 return header;
             }
             
-            // Create a result item
-            function createResultItem(question, similarity, isMatch) {
-                const item = document.createElement('div');
-                item.classList.add('result-item');
+            // Function to create result item
+            function createResultItem(phrase, similarity, matches) {
+                const resultItem = document.createElement('div');
+                resultItem.classList.add('result-item');
                 
-                const score = document.createElement('span');
-                score.classList.add('similarity-score');
-                score.textContent = (similarity * 100).toFixed(0) + '%';
+                const scoreSpan = document.createElement('span');
+                scoreSpan.classList.add('similarity-score');
+                scoreSpan.textContent = similarity.toFixed(2);
                 
-                const text = document.createElement('span');
-                text.textContent = question;
+                const phraseSpan = document.createElement('span');
+                if (matches) {
+                    phraseSpan.classList.add('match');
+                    phraseSpan.textContent = `"${phrase}" - MATCH`;
+                } else {
+                    phraseSpan.classList.add('no-match');
+                    phraseSpan.textContent = `"${phrase}" - NO MATCH`;
+                }
                 
-                const matchIndicator = document.createElement('span');
-                matchIndicator.classList.add(isMatch ? 'match' : 'no-match');
-                matchIndicator.textContent = isMatch ? ' ✓ Match' : ' ✗ No match';
+                resultItem.appendChild(scoreSpan);
+                resultItem.appendChild(phraseSpan);
                 
-                item.appendChild(score);
-                item.appendChild(text);
-                item.appendChild(matchIndicator);
-                
-                return item;
+                return resultItem;
             }
         });
     </script>

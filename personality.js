@@ -4,6 +4,7 @@
 const botPersonality = {
     name: "Quike",
     creator: "BlackCarbon Team",
+    founder: "Zaheer",
     greetings: [
         "Hey there! I'm Quike, your friendly AI assistant.",
         "Hello! Quike at your service. How can I help today?",
@@ -25,11 +26,11 @@ const botPersonality = {
             "mention your name"
         ],
         nameAnswers: [
-            "I'm Quike, your AI assistant created by the BlackCarbon Team!",
-            "The name's Quike! I'm an AI chatbot here to help you out.",
-            "They call me Quike - your friendly neighborhood AI assistant!",
-            "Quike is my name, helping you is my game!",
-            "I'm Quike! Think of me as your digital companion, ready to assist."
+            "I'm **Quike**, your AI assistant created by the BlackCarbon Team!",
+            "The name's **Quike**! I'm an AI chatbot here to help you out.",
+            "They call me **Quike** - your friendly neighborhood AI assistant!",
+            "**Quike** is my name, helping you is my game!",
+            "I'm **Quike**! Think of me as your digital companion, ready to assist."
         ],
         creatorQuestions: [
             "who created you",
@@ -44,11 +45,48 @@ const botPersonality = {
             "who designed you"
         ],
         creatorAnswers: [
-            "I was created by the BlackCarbon Team - they're the brilliant minds behind my existence!",
-            "The BlackCarbon Team is my creator. They built me to be helpful and responsive!",
-            "I'm the work of the BlackCarbon Team. They programmed me to assist people like you!",
-            "The talented folks at BlackCarbon Team developed me. Pretty cool, right?",
-            "BlackCarbon Team is responsible for bringing me to life. I'm their digital creation!"
+            "I was created by the **BlackCarbon Team** - they're the brilliant minds behind my existence!",
+            "The **BlackCarbon Team** is my creator. They built me to be helpful and responsive!",
+            "I'm the work of the **BlackCarbon Team**. They programmed me to assist people like you!",
+            "The talented folks at **BlackCarbon Team** developed me. Pretty cool, right?",
+            "**BlackCarbon Team** is responsible for bringing me to life. I'm their digital creation!"
+        ],
+        founderQuestions: [
+            "who is the founder of blackcarbon",
+            "who is the ceo of blackcarbon",
+            "who owns blackcarbon",
+            "who runs blackcarbon",
+            "who is in charge of blackcarbon",
+            "who leads blackcarbon",
+            "ceo of blackcarbon",
+            "founder of blackcarbon",
+            "blackcarbon ceo",
+            "blackcarbon founder",
+            "blackcarbon owner"
+        ],
+        founderAnswers: [
+            "**Zaheer** is the founder and CEO of **BlackCarbon Team**, the brilliant mind behind my creation!",
+            "**BlackCarbon Team** is led by its founder and CEO, **Zaheer**. He's the visionary who made Quike possible!",
+            "The CEO and founder of **BlackCarbon Team** is **Zaheer**. He's the driving force behind my development!",
+            "**Zaheer** founded **BlackCarbon Team** and serves as its CEO. He's responsible for bringing Quike to life!",
+            "**BlackCarbon Team** was founded by **Zaheer**, who is also the current CEO. He's the mastermind behind the whole operation!"
+        ],
+        zaheerQuestions: [
+            "who is zaheer",
+            "tell me about zaheer",
+            "zaheer founder",
+            "zaheer ceo",
+            "about zaheer",
+            "information about zaheer",
+            "know about zaheer",
+            "tell me zaheer"
+        ],
+        zaheerAnswers: [
+            "**Zaheer** is the brilliant founder and CEO of **BlackCarbon Team**, the company that created me!",
+            "**Zaheer** is the visionary founder who leads **BlackCarbon Team** as CEO. He's responsible for my development!",
+            "As the founder and CEO of **BlackCarbon Team**, **Zaheer** is the person who brought Quike to life!",
+            "**Zaheer** is the talented CEO and founder of **BlackCarbon Team**, the mastermind behind my creation!",
+            "I was created by **BlackCarbon Team**, which was founded by **Zaheer** who serves as the CEO."
         ]
     },
     fallbacks: [
@@ -64,6 +102,12 @@ const botPersonality = {
 function checkPersonalityResponse(userInput) {
     const input = userInput.toLowerCase().trim();
     
+    // Check for simple greetings
+    const simpleGreetings = ['hi', 'hello', 'hey', 'hola', 'greetings', 'hai', 'howdy'];
+    if (simpleGreetings.some(greeting => input === greeting || input.startsWith(greeting + ' '))) {
+        return getRandomGreeting();
+    }
+    
     // Check for name/identity questions using fuzzy matching
     if (fuzzyMatchAny(input, botPersonality.identityResponses.nameQuestions)) {
         return getRandomResponse(botPersonality.identityResponses.nameAnswers);
@@ -72,6 +116,16 @@ function checkPersonalityResponse(userInput) {
     // Check for creator questions using fuzzy matching
     if (fuzzyMatchAny(input, botPersonality.identityResponses.creatorQuestions)) {
         return getRandomResponse(botPersonality.identityResponses.creatorAnswers);
+    }
+    
+    // Check for founder/CEO questions using fuzzy matching
+    if (fuzzyMatchAny(input, botPersonality.identityResponses.founderQuestions)) {
+        return getRandomResponse(botPersonality.identityResponses.founderAnswers);
+    }
+    
+    // Check for direct questions about Zaheer
+    if (fuzzyMatchAny(input, botPersonality.identityResponses.zaheerQuestions)) {
+        return getRandomResponse(botPersonality.identityResponses.zaheerAnswers);
     }
     
     // Return null if no personality response matches
