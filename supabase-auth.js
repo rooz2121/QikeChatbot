@@ -181,18 +181,79 @@ async function loadChatHistory(userId) {
             // Clear the loading indicator
             historyList.innerHTML = '';
             
+            // Group sessions by date: today, yesterday, older
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            const todaySessions = [];
+            const yesterdaySessions = [];
+            const olderSessions = [];
+            
+            // Sort sessions into date groups
+            sessions.forEach(session => {
+                const sessionDate = new Date(session.updated_at || session.created_at);
+                sessionDate.setHours(0, 0, 0, 0);
+                
+                if (sessionDate.getTime() === today.getTime()) {
+                    todaySessions.push(session);
+                } else if (sessionDate.getTime() === yesterday.getTime()) {
+                    yesterdaySessions.push(session);
+                } else {
+                    olderSessions.push(session);
+                }
+            });
+            
             // Create a document fragment for better performance
             const fragment = document.createDocumentFragment();
             
-            // Use Promise.all to handle all async createHistoryItem calls
-            const historyPromises = sessions.map(async (session) => {
-                const historyItem = await createHistoryItem(session);
-                fragment.appendChild(historyItem);
-                return { session, element: historyItem };
-            });
+            // Add date headers and sessions for each group
+            if (todaySessions.length > 0) {
+                const todayHeader = document.createElement('div');
+                todayHeader.className = 'date-header';
+                todayHeader.innerHTML = '<span>Today</span>';
+                fragment.appendChild(todayHeader);
+                
+                const todayPromises = todaySessions.map(async (session) => {
+                    const historyItem = await createHistoryItem(session);
+                    fragment.appendChild(historyItem);
+                    return { session, element: historyItem };
+                });
+                
+                await Promise.all(todayPromises);
+            }
             
-            // Wait for all history items to be created
-            const results = await Promise.all(historyPromises);
+            if (yesterdaySessions.length > 0) {
+                const yesterdayHeader = document.createElement('div');
+                yesterdayHeader.className = 'date-header';
+                yesterdayHeader.innerHTML = '<span>Yesterday</span>';
+                fragment.appendChild(yesterdayHeader);
+                
+                const yesterdayPromises = yesterdaySessions.map(async (session) => {
+                    const historyItem = await createHistoryItem(session);
+                    fragment.appendChild(historyItem);
+                    return { session, element: historyItem };
+                });
+                
+                await Promise.all(yesterdayPromises);
+            }
+            
+            if (olderSessions.length > 0) {
+                const olderHeader = document.createElement('div');
+                olderHeader.className = 'date-header';
+                olderHeader.innerHTML = '<span>Older</span>';
+                fragment.appendChild(olderHeader);
+                
+                const olderPromises = olderSessions.map(async (session) => {
+                    const historyItem = await createHistoryItem(session);
+                    fragment.appendChild(historyItem);
+                    return { session, element: historyItem };
+                });
+                
+                await Promise.all(olderPromises);
+            }
             
             // Append all items at once
             historyList.appendChild(fragment);
@@ -281,9 +342,6 @@ async function createHistoryItem(session) {
             <button class="delete-chat-btn" title="Delete Chat">
                 <i class="fas fa-trash"></i>
             </button>
-            <a href="chat-history/history.html?id=${session.id}" class="view-details-btn" title="View Full History">
-                <i class="fas fa-external-link-alt"></i>
-            </a>
         </div>
     `;
     
