@@ -18,13 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     createParticles();
 
     // Button click handlers
-    getStartedBtn.addEventListener('click', async () => {
-        // Check if user is already logged in
-        const { data: { session } } = await window.supabaseClient.auth.getSession();
-        const isLoggedIn = !!session;
-        
-        console.log('User is logged in:', isLoggedIn);
-        
+    getStartedBtn.addEventListener('click', () => {
         // Hide landing page with animation
         landingPage.classList.add('hidden');
         
@@ -36,12 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Add visible class after a slight delay to trigger the animation
             setTimeout(() => {
                 chatContainer.classList.add('visible');
-                
-                // If user is not logged in, show guest mode UI
-                if (!isLoggedIn) {
-                    setupGuestMode();
-                }
-                
                 // Focus on the input field
                 userInput.focus();
                 // Scroll to the bottom
@@ -49,72 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 50);
         }, 500);
     });
-    
-    // Function to setup guest mode UI
-    function setupGuestMode() {
-        console.log('Setting up guest mode UI');
-        
-        // Update user profile section for guest
-        const userNameElement = document.getElementById('userName');
-        const userEmailElement = document.getElementById('userEmail');
-        const userAvatarElement = document.getElementById('userAvatar');
-        
-        if (userNameElement && userEmailElement && userAvatarElement) {
-            userNameElement.textContent = 'Guest User';
-            userEmailElement.textContent = 'Sign in to save your chats';
-            userAvatarElement.src = 'https://ui-avatars.com/api/?name=Guest&background=7C3AED&color=fff';
-        }
-        
-        // Add a sign-in button to the user profile section
-        const userProfile = document.querySelector('.user-profile');
-        if (userProfile) {
-            const signInButton = document.createElement('button');
-            signInButton.className = 'guest-signin-btn';
-            signInButton.innerHTML = '<i class="fab fa-google"></i> Sign In';
-            signInButton.addEventListener('click', async () => {
-                try {
-                    const currentUrl = window.location.href.split('#')[0].split('?')[0];
-                    const { data, error } = await window.supabaseClient.auth.signInWithOAuth({
-                        provider: 'google',
-                        options: {
-                            redirectTo: currentUrl
-                        }
-                    });
-                    
-                    if (error) throw error;
-                } catch (error) {
-                    console.error('Error logging in with Google:', error.message);
-                }
-            });
-            userProfile.appendChild(signInButton);
-        }
-        
-        // Show mock chat history
-        const historyList = document.querySelector('.history-list');
-        if (historyList) {
-            // Add a date header for today
-            const todayHeader = document.createElement('div');
-            todayHeader.className = 'date-header';
-            todayHeader.innerHTML = '<span>Guest Session</span>';
-            
-            // Create a mock history item
-            const mockHistoryItem = document.createElement('div');
-            mockHistoryItem.className = 'history-item active';
-            mockHistoryItem.innerHTML = `
-                <div class="history-icon"><i class="fas fa-comment"></i></div>
-                <div class="history-content">
-                    <div class="history-title">Current Chat</div>
-                    <div class="history-preview">Your chat will not be saved</div>
-                    <div class="history-date">Guest Mode</div>
-                </div>
-            `;
-            
-            // Clear any existing content and add our mock items
-            historyList.innerHTML = '';
-            historyList.appendChild(todayHeader);
-            historyList.appendChild(mockHistoryItem);
-        }
-    }
 
     backButton.addEventListener('click', () => {
         // Hide chat container

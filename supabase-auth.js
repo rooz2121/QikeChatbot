@@ -63,43 +63,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event === 'SIGNED_IN') {
             console.log('User signed in:', session.user);
             
-            // Remove any guest mode UI elements if they exist
-            const guestSignInBtn = document.querySelector('.guest-signin-btn');
-            if (guestSignInBtn) {
-                guestSignInBtn.remove();
-            }
-            
-            // Check if we're already in the chat interface
-            const chatContainerVisible = document.getElementById('chatContainer').style.display === 'flex';
-            
             // Check if user settings exist, create if not
             checkUserSettings(session.user.id);
+            
+            // Load chat history
+            loadChatHistory(session.user.id);
             
             // Update user profile information
             updateUserProfile(session.user);
             
-            if (chatContainerVisible) {
-                // We're already in the chat interface (from guest mode)
-                // Just load the user's data and update the UI
-                console.log('Already in chat interface, loading user data');
-                
-                // Load chat history
-                loadChatHistory(session.user.id);
-            } else {
-                // Coming from the landing page
-                // Hide landing page, show chat interface
-                document.getElementById('landingPage').classList.add('hidden');
+            // Hide landing page, show chat interface
+            document.getElementById('landingPage').classList.add('hidden');
+            setTimeout(() => {
+                document.getElementById('landingPage').style.display = 'none';
+                document.getElementById('chatContainer').style.display = 'flex';
                 setTimeout(() => {
-                    document.getElementById('landingPage').style.display = 'none';
-                    document.getElementById('chatContainer').style.display = 'flex';
-                    setTimeout(() => {
-                        document.getElementById('chatContainer').classList.add('visible');
-                        
-                        // Load chat history
-                        loadChatHistory(session.user.id);
-                    }, 50);
-                }, 500);
-            }
+                    document.getElementById('chatContainer').classList.add('visible');
+                }, 50);
+            }, 500);
         } else if (event === 'SIGNED_OUT') {
             console.log('User signed out');
             
@@ -111,14 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Reset current session ID
             window.currentSessionId = null;
-            
-            // Return to landing page
-            document.getElementById('chatContainer').classList.remove('visible');
-            setTimeout(() => {
-                document.getElementById('chatContainer').style.display = 'none';
-                document.getElementById('landingPage').style.display = 'flex';
-                document.getElementById('landingPage').classList.remove('hidden');
-            }, 500);
         }
     });
 });
@@ -133,41 +106,24 @@ async function checkUserSession() {
             const user = session.user;
             console.log('Logged in as:', user.email);
             
-            // Remove any guest mode UI elements if they exist
-            const guestSignInBtn = document.querySelector('.guest-signin-btn');
-            if (guestSignInBtn) {
-                guestSignInBtn.remove();
-            }
-            
             // Update user profile information first
             updateUserProfile(user);
             
-            // Check if we're already in the chat interface
-            const chatContainerVisible = document.getElementById('chatContainer').style.display === 'flex';
-            
-            if (chatContainerVisible) {
-                // We're already in the chat interface (probably from guest mode)
-                // Just load the user's data
-                checkUserSettings(user.id);
-                loadChatHistory(user.id);
-            } else {
-                // We're coming from the landing page
-                // Hide login section, show chat interface
-                document.getElementById('landingPage').classList.add('hidden');
+            // Hide login section, show chat interface
+            document.getElementById('landingPage').classList.add('hidden');
+            setTimeout(() => {
+                document.getElementById('landingPage').style.display = 'none';
+                document.getElementById('chatContainer').style.display = 'flex';
                 setTimeout(() => {
-                    document.getElementById('landingPage').style.display = 'none';
-                    document.getElementById('chatContainer').style.display = 'flex';
-                    setTimeout(() => {
-                        document.getElementById('chatContainer').classList.add('visible');
-                        
-                        // Check if user settings exist, create if not
-                        checkUserSettings(user.id);
-                        
-                        // Load user's chat history
-                        loadChatHistory(user.id);
-                    }, 50);
-                }, 500);
-            }
+                    document.getElementById('chatContainer').classList.add('visible');
+                    
+                    // Check if user settings exist, create if not
+                    checkUserSettings(user.id);
+                    
+                    // Load user's chat history
+                    loadChatHistory(user.id);
+                }, 50);
+            }, 500);
             
             return user;
         }
