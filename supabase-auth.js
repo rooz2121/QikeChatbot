@@ -16,17 +16,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // Google login button handler
     googleLoginBtn.addEventListener('click', async () => {
         try {
-            // Get the site URL for redirect
-            // Use the origin which includes protocol, domain and port
-            const siteUrl = window.location.origin;
-            console.log('Using site URL for redirect:', siteUrl);
+            // Determine if we're on Netlify or localhost
+            const isNetlify = window.location.hostname.includes('netlify.app') || 
+                              window.location.hostname.includes('windsurf.build');
             
-            // For Netlify deployments, we need to ensure we're using the correct URL
-            // This handles both localhost and Netlify deployments
+            // Set the redirect URL based on environment
+            let redirectUrl;
+            if (isNetlify) {
+                // For Netlify, use the full origin
+                redirectUrl = window.location.origin;
+            } else {
+                // For localhost development
+                redirectUrl = 'http://localhost:3000';
+            }
+            
+            console.log('Using redirect URL:', redirectUrl);
+            
+            // Configure the OAuth sign-in with explicit redirect
             const { data, error } = await window.supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: siteUrl
+                    redirectTo: redirectUrl
                 }
             });
             
