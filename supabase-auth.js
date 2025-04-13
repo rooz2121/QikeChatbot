@@ -2,7 +2,11 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize UI elements
-    const googleLoginBtn = document.getElementById('googleLoginBtn');
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const showSignupLink = document.getElementById('showSignupLink');
+    const showLoginLink = document.getElementById('showLoginLink');
+    const authMessage = document.getElementById('authMessage');
     const signOutBtn = document.getElementById('signOutBtn');
     const newChatBtn = document.getElementById('newChatBtn');
     const historyList = document.querySelector('.history-list');
@@ -13,37 +17,108 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check if user is already logged in
     checkUserSession();
     
-    // Google login button handler
-    googleLoginBtn.addEventListener('click', async () => {
+    // Toggle between login and signup forms
+    showSignupLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        loginForm.style.display = 'none';
+        signupForm.style.display = 'flex';
+        authMessage.style.display = 'none';
+    });
+    
+    showLoginLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        signupForm.style.display = 'none';
+        loginForm.style.display = 'flex';
+        authMessage.style.display = 'none';
+    });
+    
+    // Login form handler
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('emailInput').value;
+        const password = document.getElementById('passwordInput').value;
+        
         try {
-            // Determine if we're on Netlify or localhost
-            const isNetlify = window.location.hostname.includes('netlify.app') || 
-                              window.location.hostname.includes('windsurf.build');
+            // Show loading state
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
+            loginBtn.disabled = true;
             
-            // Set the redirect URL based on environment
-            let redirectUrl;
-            if (isNetlify) {
-                // For Netlify, use the full origin
-                redirectUrl = window.location.origin;
-            } else {
-                // For localhost development
-                redirectUrl = 'http://localhost:3000';
-            }
-            
-            console.log('Using redirect URL:', redirectUrl);
-            
-            // Configure the OAuth sign-in with explicit redirect
-            const { data, error } = await window.supabaseClient.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: redirectUrl
-                }
+            // Sign in with email and password
+            const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+                email,
+                password
             });
             
             if (error) throw error;
+            
+            // Clear form
+            loginForm.reset();
+            
         } catch (error) {
-            console.error('Error logging in with Google:', error.message);
-            alert('Failed to log in with Google. Please try again.');
+            console.error('Error signing in:', error.message);
+            authMessage.textContent = error.message;
+            authMessage.className = 'auth-message error';
+            authMessage.style.display = 'block';
+            
+            // Reset button
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+            loginBtn.disabled = false;
+        }
+    });
+    
+    // Signup form handler
+    signupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('signupEmailInput').value;
+        const password = document.getElementById('signupPasswordInput').value;
+        const confirmPassword = document.getElementById('confirmPasswordInput').value;
+        
+        // Validate passwords match
+        if (password !== confirmPassword) {
+            authMessage.textContent = 'Passwords do not match';
+            authMessage.className = 'auth-message error';
+            authMessage.style.display = 'block';
+            return;
+        }
+        
+        try {
+            // Show loading state
+            const signupBtn = document.getElementById('signupBtn');
+            signupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+            signupBtn.disabled = true;
+            
+            // Sign up with email and password
+            const { data, error } = await window.supabaseClient.auth.signUp({
+                email,
+                password
+            });
+            
+            if (error) throw error;
+            
+            // Show success message
+            authMessage.textContent = 'Account created successfully! You can now sign in.';
+            authMessage.className = 'auth-message success';
+            authMessage.style.display = 'block';
+            
+            // Switch to login form
+            signupForm.style.display = 'none';
+            loginForm.style.display = 'flex';
+            
+            // Clear form
+            signupForm.reset();
+            
+        } catch (error) {
+            console.error('Error signing up:', error.message);
+            authMessage.textContent = error.message;
+            authMessage.className = 'auth-message error';
+            authMessage.style.display = 'block';
+            
+            // Reset button
+            const signupBtn = document.getElementById('signupBtn');
+            signupBtn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+            signupBtn.disabled = false;
         }
     });
     
@@ -649,11 +724,48 @@ function scrollToBottom() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
+// Function to check and create user settings if needed
+async function checkUserSettings(userId) {
+    try {
+        // Check if user settings exist
+        const { data: settings, error } = await window.supabaseClient
+            .from('user_settings')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
+        
+        if (error && error.code === 'PGRST116') { // Record not found
+            // Create default settings for the user
+            const { data: newSettings, error: insertError } = await window.supabaseClient
+                .from('user_settings')
+                .insert([{
+                    user_id: userId,
+                    theme: 'dark',
+                    notification_enabled: true,
+                    created_at: new Date().toISOString()
+                }])
+                .select();
+            
+            if (insertError) throw insertError;
+            console.log('Created default settings for user:', userId);
+            return newSettings;
+        } else if (error) {
+            throw error;
+        }
+        
+        return settings;
+    } catch (error) {
+        console.error('Error checking/creating user settings:', error.message);
+        return null;
+    }
+}
+
 // Expose functions to be used by the main script
 window.supabaseAuth = {
     saveMessageToDatabase,
     createNewChatSession,
     loadChatHistory,
     checkUserSession,
-    updateUserProfile
+    updateUserProfile,
+    checkUserSettings
 };
