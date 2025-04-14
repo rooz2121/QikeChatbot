@@ -52,8 +52,33 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (error) throw error;
             
+            // Show success notification
+            showNotification('Signed in successfully!', 'success');
+            
             // Clear form
             loginForm.reset();
+            
+            // Get user data from the session
+            const user = data.user;
+            
+            // Update user profile information
+            updateUserProfile(user);
+            
+            // Hide landing page, show chat interface
+            document.getElementById('landingPage').classList.add('hidden');
+            setTimeout(() => {
+                document.getElementById('landingPage').style.display = 'none';
+                document.getElementById('chatContainer').style.display = 'flex';
+                setTimeout(() => {
+                    document.getElementById('chatContainer').classList.add('visible');
+                    
+                    // Check if user settings exist, create if not
+                    checkUserSettings(user.id);
+                    
+                    // Load user's chat history
+                    loadChatHistory(user.id);
+                }, 50);
+            }, 500);
             
         } catch (error) {
             console.error('Error signing in:', error.message);
@@ -65,6 +90,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const loginBtn = document.getElementById('loginBtn');
             loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
             loginBtn.disabled = false;
+            
+            // Show error notification
+            showNotification('Login failed: ' + error.message, 'error');
         }
     });
     
@@ -97,14 +125,25 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (error) throw error;
             
-            // Show success message
+            // Show success notification
+            showNotification('Account created successfully!', 'success');
+            
+            // Show success message in the form
             authMessage.textContent = 'Account created successfully! You can now sign in.';
             authMessage.className = 'auth-message success';
             authMessage.style.display = 'block';
             
-            // Switch to login form
-            signupForm.style.display = 'none';
-            loginForm.style.display = 'flex';
+            // Auto-fill the login form with the email
+            document.getElementById('emailInput').value = email;
+            
+            // Switch to login form after a short delay
+            setTimeout(() => {
+                signupForm.style.display = 'none';
+                loginForm.style.display = 'flex';
+                
+                // Focus on password field
+                document.getElementById('passwordInput').focus();
+            }, 1500);
             
             // Clear form
             signupForm.reset();
@@ -114,6 +153,9 @@ document.addEventListener('DOMContentLoaded', () => {
             authMessage.textContent = error.message;
             authMessage.className = 'auth-message error';
             authMessage.style.display = 'block';
+            
+            // Show error notification
+            showNotification('Signup failed: ' + error.message, 'error');
             
             // Reset button
             const signupBtn = document.getElementById('signupBtn');
@@ -125,20 +167,69 @@ document.addEventListener('DOMContentLoaded', () => {
     // Sign out button handler
     signOutBtn.addEventListener('click', async () => {
         try {
+            // Show loading state
+            const originalContent = signOutBtn.innerHTML;
+            signOutBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            signOutBtn.disabled = true;
+            
+            // Check if there's an active session first
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            
+            if (!session) {
+                // No active session, just redirect to landing page
+                showNotification('No active session found', 'info');
+                handleSignOutUI();
+                return;
+            }
+            
+            // Sign out from Supabase
             const { error } = await window.supabaseClient.auth.signOut();
             if (error) throw error;
             
-            // Show landing page, hide chat interface
-            document.getElementById('chatContainer').classList.remove('visible');
-            setTimeout(() => {
-                document.getElementById('chatContainer').style.display = 'none';
-                document.getElementById('landingPage').style.display = 'flex';
-                document.getElementById('landingPage').classList.remove('hidden');
-            }, 500);
+            // Show success notification
+            showNotification('Signed out successfully', 'success');
+            
+            // Handle UI transition
+            handleSignOutUI();
+            
         } catch (error) {
             console.error('Error signing out:', error.message);
+            // Show error notification
+            showNotification('Error signing out: ' + error.message, 'error');
+            // Reset button state
+            signOutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i>';
+            signOutBtn.disabled = false;
+            
+            // If there was an error, still try to redirect to landing page
+            handleSignOutUI();
         }
     });
+    
+    // Helper function to handle sign out UI transitions
+    function handleSignOutUI() {
+        // Reset global state
+        window.currentSessionId = null;
+        
+        // Smooth transition to landing page
+        document.getElementById('chatContainer').classList.remove('visible');
+        setTimeout(() => {
+            document.getElementById('chatContainer').style.display = 'none';
+            document.getElementById('landingPage').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('landingPage').classList.remove('hidden');
+                // Reset login form
+                if (document.getElementById('loginForm')) {
+                    document.getElementById('loginForm').reset();
+                }
+                // Reset button state
+                const signOutBtn = document.getElementById('signOutBtn');
+                if (signOutBtn) {
+                    signOutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i>';
+                    signOutBtn.disabled = false;
+                }
+            }, 50);
+        }, 500);
+    }
     
     // New chat button handler
     newChatBtn.addEventListener('click', () => {
@@ -146,15 +237,52 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Listen for auth state changes
+    let isHandlingAuthChange = false; // Flag to prevent multiple simultaneous auth change handlers
     window.supabaseClient.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_IN') {
             console.log('User signed in:', session.user);
             
+            // Prevent duplicate handling
+            if (isHandlingAuthChange) {
+                console.log('Already handling auth change, skipping duplicate event');
+                return;
+            }
+            
+            isHandlingAuthChange = true;
+            
+            // Reset login button state
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) {
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
+                loginBtn.disabled = false;
+            }
+            
+            // Close login modal if it's open
+            const loginModal = document.getElementById('loginModal');
+            if (loginModal && loginModal.classList.contains('visible')) {
+                loginModal.classList.remove('visible');
+                setTimeout(() => {
+                    loginModal.style.visibility = 'hidden';
+                    loginModal.style.opacity = '0';
+                }, 300);
+            }
+            
+            // Hide login prompt banner, show new chat banner
+            const loginPromptBanner = document.getElementById('loginPromptBanner');
+            const newChatBanner = document.getElementById('newChatBanner');
+            if (loginPromptBanner) loginPromptBanner.style.display = 'none';
+            if (newChatBanner) newChatBanner.style.display = 'block';
+            
             // Check if user settings exist, create if not
             checkUserSettings(session.user.id);
             
-            // Load chat history
-            loadChatHistory(session.user.id);
+            // Load user's chat history
+            loadChatHistory(session.user.id).then(() => {
+                // Reset the flag after all operations are complete
+                setTimeout(() => {
+                    isHandlingAuthChange = false;
+                }, 1000);
+            });
             
             // Update user profile information
             updateUserProfile(session.user);
@@ -196,6 +324,18 @@ async function checkUserSession() {
             // Update user profile information first
             updateUserProfile(user);
             
+            // Hide login prompt banner, show new chat banner
+            const loginPromptBanner = document.getElementById('loginPromptBanner');
+            const newChatBanner = document.getElementById('newChatBanner');
+            if (loginPromptBanner) loginPromptBanner.style.display = 'none';
+            if (newChatBanner) newChatBanner.style.display = 'block';
+            
+            // Make sure the user email doesn't show the guest message
+            const userEmail = document.getElementById('userEmail');
+            if (userEmail && userEmail.textContent === 'Sign in to save chats') {
+                userEmail.textContent = user.email || 'User';
+            }
+            
             // Hide login section, show chat interface
             document.getElementById('landingPage').classList.add('hidden');
             setTimeout(() => {
@@ -213,11 +353,66 @@ async function checkUserSession() {
             }, 500);
             
             return user;
+        } else {
+            // User is not logged in
+            setupGuestMode();
         }
         return null;
     } catch (error) {
         console.error('Error checking user session:', error);
+        setupGuestMode();
         return null;
+    }
+}
+
+// Function to setup guest mode
+function setupGuestMode() {
+    console.log('Setting up guest mode');
+    
+    // Show login prompt banner, hide new chat banner
+    const loginPromptBanner = document.getElementById('loginPromptBanner');
+    const newChatBanner = document.getElementById('newChatBanner');
+    if (loginPromptBanner) loginPromptBanner.style.display = 'flex';
+    if (newChatBanner) newChatBanner.style.display = 'none';
+    
+    // Clear history list and show temporary chat
+    const historyList = document.querySelector('.history-list');
+    
+    if (historyList) {
+        historyList.innerHTML = `
+            <div class="history-item active">
+                <div class="history-icon"><i class="fas fa-comment"></i></div>
+                <div class="history-content">
+                    <div class="history-title">Temporary Chat</div>
+                    <div class="history-preview">Your chat won't be saved</div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Update user profile section
+    const userName = document.getElementById('userName');
+    const userEmail = document.getElementById('userEmail');
+    const userAvatar = document.getElementById('userAvatar');
+    
+    if (userName) userName.textContent = 'Guest User';
+    if (userEmail) userEmail.textContent = 'Sign in to save chats';
+    if (userAvatar) userAvatar.src = 'https://api.dicebear.com/6.x/bottts/svg?seed=guest';
+    
+    // Add click event to the sidebar login button
+    const sidebarLoginBtn = document.getElementById('sidebarLoginBtn');
+    if (sidebarLoginBtn) {
+        sidebarLoginBtn.addEventListener('click', () => {
+            // Hide chat container, show landing page
+            document.getElementById('chatContainer').classList.remove('visible');
+            setTimeout(() => {
+                document.getElementById('chatContainer').style.display = 'none';
+                document.getElementById('landingPage').style.display = 'flex';
+                setTimeout(() => {
+                    document.getElementById('landingPage').classList.remove('hidden');
+                }, 50);
+            }, 500);
+        });
     }
 }
 
@@ -241,16 +436,19 @@ async function checkUserSettings(userId) {
 async function loadChatHistory(userId) {
     console.log('Loading chat history for user ID:', userId);
     try {
-        // Get all chat sessions for the user
+        // Get all chat sessions for the user with message counts
         const { data: sessions, error } = await window.supabaseClient
             .from('chat_sessions')
-            .select('*')
+            .select(`
+                *,
+                messages:messages(count)
+            `)
             .eq('user_id', userId) // Filter by user_id
             .order('updated_at', { ascending: false });
             
         if (error) throw error;
         
-        console.log('Retrieved chat sessions:', sessions);
+        console.log('Retrieved chat sessions with message counts:', sessions);
         
         // Clear existing history items
         const historyList = document.querySelector('.history-list');
@@ -268,19 +466,32 @@ async function loadChatHistory(userId) {
             // Clear the loading indicator
             historyList.innerHTML = '';
             
-            // Group sessions by date: today, yesterday, older
+            // Group sessions by date: today, yesterday, this week, this month, older
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             
             const yesterday = new Date(today);
             yesterday.setDate(yesterday.getDate() - 1);
             
+            const thisWeekStart = new Date(today);
+            thisWeekStart.setDate(today.getDate() - today.getDay());
+            
+            const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            
             const todaySessions = [];
             const yesterdaySessions = [];
+            const thisWeekSessions = [];
+            const thisMonthSessions = [];
             const olderSessions = [];
             
             // Sort sessions into date groups
             sessions.forEach(session => {
+                // Skip sessions with no messages
+                if (session.messages && session.messages.length === 0 && 
+                    session.title === 'New Chat') {
+                    return;
+                }
+                
                 const sessionDate = new Date(session.updated_at || session.created_at);
                 sessionDate.setHours(0, 0, 0, 0);
                 
@@ -288,6 +499,10 @@ async function loadChatHistory(userId) {
                     todaySessions.push(session);
                 } else if (sessionDate.getTime() === yesterday.getTime()) {
                     yesterdaySessions.push(session);
+                } else if (sessionDate >= thisWeekStart) {
+                    thisWeekSessions.push(session);
+                } else if (sessionDate >= thisMonthStart) {
+                    thisMonthSessions.push(session);
                 } else {
                     olderSessions.push(session);
                 }
@@ -296,66 +511,85 @@ async function loadChatHistory(userId) {
             // Create a document fragment for better performance
             const fragment = document.createDocumentFragment();
             
-            // Add date headers and sessions for each group
-            if (todaySessions.length > 0) {
-                const todayHeader = document.createElement('div');
-                todayHeader.className = 'date-header';
-                todayHeader.innerHTML = '<span>Today</span>';
-                fragment.appendChild(todayHeader);
+            // Helper function to add a date group
+            const addDateGroup = async (title, sessions) => {
+                if (sessions.length === 0) return;
                 
-                const todayPromises = todaySessions.map(async (session) => {
+                const header = document.createElement('div');
+                header.className = 'date-header';
+                header.innerHTML = `<span>${title}</span>`;
+                fragment.appendChild(header);
+                
+                // Sort sessions by updated_at within each group
+                sessions.sort((a, b) => {
+                    return new Date(b.updated_at) - new Date(a.updated_at);
+                });
+                
+                const promises = sessions.map(async (session) => {
                     const historyItem = await createHistoryItem(session);
                     fragment.appendChild(historyItem);
                     return { session, element: historyItem };
                 });
                 
-                await Promise.all(todayPromises);
-            }
+                await Promise.all(promises);
+            };
             
-            if (yesterdaySessions.length > 0) {
-                const yesterdayHeader = document.createElement('div');
-                yesterdayHeader.className = 'date-header';
-                yesterdayHeader.innerHTML = '<span>Yesterday</span>';
-                fragment.appendChild(yesterdayHeader);
-                
-                const yesterdayPromises = yesterdaySessions.map(async (session) => {
-                    const historyItem = await createHistoryItem(session);
-                    fragment.appendChild(historyItem);
-                    return { session, element: historyItem };
-                });
-                
-                await Promise.all(yesterdayPromises);
-            }
-            
-            if (olderSessions.length > 0) {
-                const olderHeader = document.createElement('div');
-                olderHeader.className = 'date-header';
-                olderHeader.innerHTML = '<span>Older</span>';
-                fragment.appendChild(olderHeader);
-                
-                const olderPromises = olderSessions.map(async (session) => {
-                    const historyItem = await createHistoryItem(session);
-                    fragment.appendChild(historyItem);
-                    return { session, element: historyItem };
-                });
-                
-                await Promise.all(olderPromises);
-            }
+            // Add all date groups
+            await addDateGroup('Today', todaySessions);
+            await addDateGroup('Yesterday', yesterdaySessions);
+            await addDateGroup('This Week', thisWeekSessions);
+            await addDateGroup('This Month', thisMonthSessions);
+            await addDateGroup('Older', olderSessions);
             
             // Append all items at once
             historyList.appendChild(fragment);
             
             // If there are sessions, load the most recent one
             if (sessions.length > 0) {
-                loadChatSession(sessions[0].id);
+                // Find the first session with messages or just use the first one
+                const sessionToLoad = sessions.find(s => 
+                    s.messages && s.messages.length > 0
+                ) || sessions[0];
+                
+                loadChatSession(sessionToLoad.id);
             }
         } else {
             // No sessions, either show a message or create a new one
-            historyList.innerHTML = '<div class="no-history">No chat history yet.<br>Start a new conversation!</div>';
-            // Create a new session after a short delay
+            historyList.innerHTML = `
+                <div class="no-history">
+                    <p>No chat history</p>
+                    <button class="new-chat-btn" id="emptyChatNewBtn" style="padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(99, 102, 241, 0.3); margin: 10px; display: inline-block;">
+                        Start a new chat
+                    </button>
+                </div>
+            `;
+            
+            // Add event listener to the new chat button
             setTimeout(() => {
-                createNewChatSession();
-            }, 500);
+                const emptyChatNewBtn = document.getElementById('emptyChatNewBtn');
+                if (emptyChatNewBtn) {
+                    emptyChatNewBtn.addEventListener('click', () => {
+                        createNewChatSession();
+                    });
+                }
+            }, 0);
+            
+            // Show empty state in the chat area instead of creating a new session
+            const chatMessages = document.getElementById('chatMessages');
+            if (chatMessages) {
+                chatMessages.innerHTML = `
+                    <div class="empty-chat-message">
+                        <div class="empty-chat-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h3>No active chat</h3>
+                        <p>Start a new chat or select one from the history panel</p>
+                    </div>
+                `;
+            }
+            
+            // Reset current session ID
+            window.currentSessionId = null;
         }
     } catch (error) {
         console.error('Error loading chat history:', error.message);
@@ -376,6 +610,7 @@ async function createHistoryItem(session) {
     // Get the last message for this session to show as preview
     let previewText = 'Click to view this chat';
     let lastMessageTime = new Date(session.updated_at || session.created_at);
+    let messageRole = 'assistant';
     
     try {
         const { data: messages, error } = await window.supabaseClient
@@ -393,37 +628,77 @@ async function createHistoryItem(session) {
                 lastMessageTime = new Date(messages[0].created_at);
             }
             
-            // Only show preview for bot messages as they contain the meaningful responses
-            if (messages[0].role === 'assistant') {
-                // Clean up content by removing markdown and code blocks for preview
-                let cleanContent = messages[0].content
-                    .replace(/```[\s\S]*?```/g, '[Code Block]') // Replace code blocks
-                    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-                    .replace(/\*(.*?)\*/g, '$1') // Remove italic
-                    .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // Remove links
-                    .replace(/\n/g, ' '); // Replace newlines with spaces
-                    
-                // Truncate message preview to 40 characters
-                previewText = cleanContent.substring(0, 40) + (cleanContent.length > 40 ? '...' : '');
-            } else if (messages[0].role === 'user') {
-                // For user messages, show the question
-                previewText = messages[0].content.substring(0, 40) + (messages[0].content.length > 40 ? '...' : '');
+            messageRole = messages[0].role;
+            
+            // Clean up content by removing markdown and code blocks for preview
+            let cleanContent = messages[0].content
+                .replace(/```[\s\S]*?```/g, '[Code Block]') // Replace code blocks
+                .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+                .replace(/\*(.*?)\*/g, '$1') // Remove italic
+                .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // Remove links
+                .replace(/\n/g, ' '); // Replace newlines with spaces
+                
+            // Truncate message preview to 40 characters
+            previewText = cleanContent.substring(0, 40) + (cleanContent.length > 40 ? '...' : '');
+            
+            // If it's a user message, add a prefix
+            if (messages[0].role === 'user') {
+                previewText = 'You: ' + previewText;
             }
         }
     } catch (error) {
         console.error('Error fetching message preview for session', session.id, ':', error);
     }
     
-    // Format the date
-    const date = new Date(session.updated_at);
-    const formattedDate = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    // Format the date and time intelligently
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    let timeString;
+    
+    // Format time based on how recent it is
+    if (lastMessageTime >= today) {
+        // Today - show time only
+        timeString = lastMessageTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (lastMessageTime >= yesterday) {
+        // Yesterday - show "Yesterday"
+        timeString = 'Yesterday';
+    } else if (lastMessageTime >= new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000)) {
+        // Within last week - show day name
+        timeString = lastMessageTime.toLocaleDateString([], { weekday: 'short' });
+    } else if (lastMessageTime.getFullYear() === now.getFullYear()) {
+        // This year - show month and day
+        timeString = lastMessageTime.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    } else {
+        // Different year - show month, day, year
+        timeString = lastMessageTime.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    
+    // Create a title if it's just "New Chat"
+    let chatTitle = session.title;
+    if (chatTitle === 'New Chat' && previewText !== 'Click to view this chat') {
+        // Use the first few words of the first message as the title
+        const words = previewText.split(' ');
+        chatTitle = words.slice(0, 3).join(' ');
+        if (words.length > 3) chatTitle += '...';
+    }
+    
+    // Add appropriate icon based on last message role
+    let iconClass = 'fa-comment';
+    if (messageRole === 'user') {
+        iconClass = 'fa-user';
+    } else if (messageRole === 'assistant') {
+        iconClass = 'fa-robot';
+    }
     
     historyItem.innerHTML = `
-        <div class="history-icon"><i class="fas fa-comment"></i></div>
+        <div class="history-icon"><i class="fas ${iconClass}"></i></div>
         <div class="history-content">
-            <div class="history-title">${session.title}</div>
+            <div class="history-title">${chatTitle}</div>
             <div class="history-preview">${previewText}</div>
-            <div class="history-date">${formattedDate}</div>
+            <div class="history-date">${timeString}</div>
         </div>
         <div class="history-actions">
             <button class="delete-chat-btn" title="Delete Chat">
@@ -491,7 +766,7 @@ async function loadChatSession(sessionId) {
 }
 
 // Function to create a new chat session
-async function createNewChatSession() {
+async function createNewChatSession(isCalledFromSaveMessage = false) {
     try {
         console.log('Creating new chat session');
         
@@ -500,11 +775,39 @@ async function createNewChatSession() {
         
         if (!userSession || !userSession.user) {
             console.error('No user session found when creating chat session');
-            return null;
+            // Show a notification to the user
+            showNotification('Please sign in to save your chat history', 'info');
+            
+            // For guest users, just create a temporary chat in the UI without database operations
+            const chatMessages = document.getElementById('chatMessages');
+            if (chatMessages) {
+                chatMessages.innerHTML = '';
+                
+                // Add welcome message to UI only (no database save)
+                const welcomeMessage = "Hello! I'm Quike, your AI assistant. How can I help you today?";
+                addMessageToUI(welcomeMessage, 'assistant');
+            }
+            
+            // Set a temporary session ID for the UI
+            window.currentSessionId = 'temp_' + Date.now();
+            
+            return window.currentSessionId; // Return the temporary ID
         }
         
         const userId = userSession.user.id;
         console.log('Creating chat session for user:', userId);
+        
+        // Show loading state on the new chat button
+        const newChatBtn = document.getElementById('newChatBtn');
+        if (newChatBtn) {
+            newChatBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            newChatBtn.disabled = true;
+        }
+        
+        // Generate a timestamp and unique ID for the session
+        const now = new Date();
+        const timestamp = now.toISOString();
+        const sessionUniqueId = 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
         
         // Create new chat session with user_id
         const { data: session, error } = await window.supabaseClient
@@ -512,21 +815,26 @@ async function createNewChatSession() {
             .insert([{ 
                 title: 'New Chat', 
                 user_id: userId,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
+                created_at: timestamp,
+                updated_at: timestamp
             }])
             .select()
             .single();
             
         if (error) {
             console.error('Error inserting new chat session:', error);
+            // Reset new chat button
+            if (newChatBtn) {
+                newChatBtn.innerHTML = '<i class="fas fa-plus"></i>';
+                newChatBtn.disabled = false;
+            }
+            showNotification('Failed to create new chat: ' + error.message, 'error');
             throw error;
         }
         
         console.log('Successfully created new chat session:', session);
         
-        // Update UI with new session
-        const historyItem = await createHistoryItem(session);
+        // Check if we need to add a date header
         const historyList = document.querySelector('.history-list');
         
         if (!historyList) {
@@ -534,8 +842,30 @@ async function createNewChatSession() {
             return session.id;
         }
         
-        historyList.innerHTML = historyList.innerHTML.replace('<div class="no-history">No chat history yet.<br>Start a new conversation!</div>', '');
-        historyList.prepend(historyItem);
+        // Remove no-history message if present
+        const noHistoryMsg = historyList.querySelector('.no-history');
+        if (noHistoryMsg) {
+            noHistoryMsg.remove();
+        }
+        
+        // Check if we need to add a "Today" header
+        let todayHeader = historyList.querySelector('.date-header:first-child');
+        if (!todayHeader || todayHeader.textContent.trim() !== 'Today') {
+            todayHeader = document.createElement('div');
+            todayHeader.className = 'date-header';
+            todayHeader.innerHTML = '<span>Today</span>';
+            historyList.prepend(todayHeader);
+        }
+        
+        // Create and add the new history item
+        const historyItem = await createHistoryItem(session);
+        
+        // Insert after the Today header
+        if (todayHeader.nextSibling) {
+            historyList.insertBefore(historyItem, todayHeader.nextSibling);
+        } else {
+            historyList.appendChild(historyItem);
+        }
         
         // Set as active session
         document.querySelectorAll('.history-item').forEach(item => {
@@ -548,24 +878,80 @@ async function createNewChatSession() {
         if (chatMessages) {
             chatMessages.innerHTML = '';
             
-            // Add welcome message
-            addMessageToUI("Hello! I'm Quike, your AI assistant. How can I help you today?", 'assistant');
+            // Add welcome message with timestamp
+            const welcomeMessage = "Hello! I'm Quike, your AI assistant. How can I help you today?";
+            addMessageToUI(welcomeMessage, 'assistant');
+            
+            // Save welcome message to database
+            if (!isCalledFromSaveMessage) {
+                await saveMessageToDatabase(welcomeMessage, 'assistant', true);
+            }
         }
         
         // Store current session ID
         window.currentSessionId = session.id;
         
+        // Reset new chat button
+        if (newChatBtn) {
+            newChatBtn.innerHTML = '<i class="fas fa-plus"></i>';
+            newChatBtn.disabled = false;
+        }
+        
+        // Show success notification
+        showNotification('New chat created successfully', 'success');
+        
         return session.id;
     } catch (error) {
         console.error('Error creating new chat session:', error.message);
+        // Reset new chat button
+        const newChatBtn = document.getElementById('newChatBtn');
+        if (newChatBtn) {
+            newChatBtn.innerHTML = '<i class="fas fa-plus"></i>';
+            newChatBtn.disabled = false;
+        }
         return null;
     }
 }
 
 // Function to delete a chat session
 async function deleteChatSession(sessionId) {
-    if (confirm('Are you sure you want to delete this chat?')) {
+    // Show the custom confirmation modal instead of using the default confirm dialog
+    const modal = document.getElementById('deleteConfirmationModal');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    const cancelBtn = document.getElementById('cancelDeleteBtn');
+    const closeBtn = document.getElementById('closeDeleteModal');
+    
+    // Show the modal
+    modal.classList.add('visible');
+    
+    // Set up event handlers
+    const handleCancel = () => {
+        modal.classList.remove('visible');
+        // Clean up event listeners
+        confirmBtn.removeEventListener('click', handleConfirm);
+        cancelBtn.removeEventListener('click', handleCancel);
+        closeBtn.removeEventListener('click', handleCancel);
+    };
+    
+    const handleConfirm = async () => {
+        // Hide the modal first
+        modal.classList.remove('visible');
+        
+        // Clean up event listeners
+        confirmBtn.removeEventListener('click', handleConfirm);
+        cancelBtn.removeEventListener('click', handleCancel);
+        closeBtn.removeEventListener('click', handleCancel);
+        
         try {
+            // Show loading state on the delete button
+            const deleteBtn = document.querySelector(`.history-item[data-session-id="${sessionId}"] .delete-chat-btn`);
+            if (deleteBtn) {
+                const originalContent = deleteBtn.innerHTML;
+                deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                deleteBtn.disabled = true;
+            }
+            
+            // Delete the session from the database
             const { error } = await window.supabaseClient
                 .from('chat_sessions')
                 .delete()
@@ -575,16 +961,96 @@ async function deleteChatSession(sessionId) {
             
             // Remove from UI
             const historyItem = document.querySelector(`.history-item[data-session-id="${sessionId}"]`);
-            historyItem.remove();
-            
-            // If this was the active session, create a new one
-            if (window.currentSessionId === sessionId) {
-                createNewChatSession();
+            if (historyItem) {
+                historyItem.style.height = `${historyItem.offsetHeight}px`;
+                historyItem.style.overflow = 'hidden';
+                
+                // Animate removal
+                setTimeout(() => {
+                    historyItem.style.height = '0';
+                    historyItem.style.padding = '0';
+                    historyItem.style.margin = '0';
+                    historyItem.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        historyItem.remove();
+                        
+                        // If this was the active session, clear the chat area
+                        if (window.currentSessionId === sessionId) {
+                            // Clear the chat messages
+                            const chatMessages = document.getElementById('chatMessages');
+                            if (chatMessages) {
+                                chatMessages.innerHTML = '';
+                            }
+                            
+                            // Reset the current session ID
+                            window.currentSessionId = null;
+                            
+                            // Check if there are any remaining chat sessions
+                            const remainingChats = document.querySelectorAll('.history-item');
+                            if (remainingChats.length > 0) {
+                                // If there are other chats, load the first one
+                                const firstChat = remainingChats[0];
+                                const firstChatId = firstChat.dataset.sessionId;
+                                if (firstChatId) {
+                                    loadChatSession(firstChatId);
+                                    firstChat.classList.add('active');
+                                }
+                            } else {
+                                // If no chats remain, show empty state in the history panel
+                                const historyList = document.querySelector('.history-list');
+                                if (historyList) {
+                                    historyList.innerHTML = `
+                                        <div class="no-history">
+                                            <p>No chat history</p>
+                                            <button class="new-chat-btn" id="emptyChatNewBtn" style="border-radius: 4px; border: 1px solid rgba(99, 102, 241, 0.3); margin: 10px;">
+                                                <i class="fas fa-plus"></i> Start a new chat
+                                            </button>
+                                        </div>
+                                    `;
+                                    
+                                    // Add event listener to the new chat button
+                                    setTimeout(() => {
+                                        const emptyChatNewBtn = document.getElementById('emptyChatNewBtn');
+                                        if (emptyChatNewBtn) {
+                                            emptyChatNewBtn.addEventListener('click', () => {
+                                                createNewChatSession();
+                                            });
+                                        }
+                                    }, 0);
+                                }
+                                
+                                // Show a welcome message in the empty chat area
+                                const chatMessages = document.getElementById('chatMessages');
+                                if (chatMessages) {
+                                    chatMessages.innerHTML = `
+                                        <div class="empty-chat-message">
+                                            <div class="empty-chat-icon">
+                                                <i class="fas fa-comments"></i>
+                                            </div>
+                                            <h3>No active chat</h3>
+                                            <p>Start a new chat or select one from the history panel</p>
+                                        </div>
+                                    `;
+                                }
+                            }
+                        }
+                    }, 300);
+                }, 10);
             }
+            
+            // Show success notification
+            showNotification('Chat deleted successfully', 'success');
         } catch (error) {
             console.error('Error deleting chat session:', error.message);
+            showNotification('Error deleting chat: ' + error.message, 'error');
         }
-    }
+    };
+    
+    // Add event listeners
+    confirmBtn.addEventListener('click', handleConfirm);
+    cancelBtn.addEventListener('click', handleCancel);
+    closeBtn.addEventListener('click', handleCancel);
 }
 
 // Function to add a message to the UI only (no DB save)
@@ -619,19 +1085,25 @@ function addMessageToUI(text, sender) {
 }
 
 // Function to save a message to the database
-async function saveMessageToDatabase(text, role) {
-    console.log(`Saving message to database. Role: ${role}, CurrentSessionId: ${window.currentSessionId}`);
+async function saveMessageToDatabase(text, role, isWelcomeMessage = false) {
+    console.log(`Saving message to database. Role: ${role}, CurrentSessionId: ${window.currentSessionId}, isWelcomeMessage: ${isWelcomeMessage}`);
     
     if (!window.currentSessionId) {
-        console.log('No current session ID found, creating new chat session');
-        // Create a new session if none exists
-        const sessionId = await createNewChatSession();
-        if (!sessionId) {
-            console.error('Failed to create new chat session');
+        // Only create a new session if this is not a welcome message (to prevent recursion)
+        if (!isWelcomeMessage) {
+            console.log('No current session ID found, creating new chat session');
+            // Create a new session if none exists
+            const sessionId = await createNewChatSession(true); // Pass true to indicate this is being called from saveMessageToDatabase
+            if (!sessionId) {
+                console.error('Failed to create new chat session');
+                return;
+            }
+            window.currentSessionId = sessionId;
+            console.log('Created new session ID:', sessionId);
+        } else {
+            console.log('Welcome message with no session ID - skipping to prevent recursion');
             return;
         }
-        window.currentSessionId = sessionId;
-        console.log('Created new session ID:', sessionId);
     }
     
     try {
@@ -760,6 +1232,68 @@ async function checkUserSettings(userId) {
     }
 }
 
+// Function to show notifications to the user
+function showNotification(message, type = 'info') {
+    // Create notification container if it doesn't exist
+    let notificationContainer = document.getElementById('notificationContainer');
+    
+    if (!notificationContainer) {
+        notificationContainer = document.createElement('div');
+        notificationContainer.id = 'notificationContainer';
+        notificationContainer.className = 'notification-container';
+        document.body.appendChild(notificationContainer);
+    }
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    
+    // Add icon based on type
+    let icon = 'info-circle';
+    if (type === 'success') icon = 'check-circle';
+    if (type === 'error') icon = 'exclamation-circle';
+    if (type === 'warning') icon = 'exclamation-triangle';
+    
+    notification.innerHTML = `
+        <div class="notification-icon">
+            <i class="fas fa-${icon}"></i>
+        </div>
+        <div class="notification-content">${message}</div>
+        <button class="notification-close">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    // Add to container
+    notificationContainer.appendChild(notification);
+    
+    // Add close button functionality
+    const closeBtn = notification.querySelector('.notification-close');
+    closeBtn.addEventListener('click', () => {
+        notification.classList.add('notification-hiding');
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    });
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.classList.add('notification-hiding');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }
+    }, 5000);
+    
+    // Show notification with animation
+    setTimeout(() => {
+        notification.classList.add('notification-visible');
+    }, 10);
+}
+
 // Expose functions to be used by the main script
 window.supabaseAuth = {
     saveMessageToDatabase,
@@ -767,5 +1301,6 @@ window.supabaseAuth = {
     loadChatHistory,
     checkUserSession,
     updateUserProfile,
-    checkUserSettings
+    checkUserSettings,
+    showNotification
 };

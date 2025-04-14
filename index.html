@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quike</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/4712/4712109.png">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="supabase-styles.css">
+    <link rel="stylesheet" href="landing-modal.css">
+    <link rel="stylesheet" href="mobile-styles.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
@@ -23,87 +26,93 @@
         
         <!-- Landing Page -->
         <div class="landing-page" id="landingPage">
-            <div class="landing-layout">
-                <!-- Left Side: Landing Content -->
-                <div class="landing-left">
-                    <div class="landing-content">
-                        <div class="logo-container">
-                            <div class="logo-icon">
-                                <i class="fas fa-robot"></i>
-                            </div>
-                            <h1>Quike</h1>
+            <div class="landing-content-centered">
+                <h1 class="app-title">Quike</h1>
+                <p class="tagline">Your personal AI assistant with attitude</p>
+                <div class="hero-image">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png" alt="AI Assistant">
+                </div>
+                
+                <div class="features">
+                    <div class="feature">
+                        <i class="fas fa-bolt"></i>
+                        <div class="text-content">
+                            <span>Lightning fast responses</span>
                         </div>
-                        <p class="tagline">Your personal AI assistant with attitude</p>
-                        <div class="features">
-                            <div class="feature">
-                                <i class="fas fa-bolt"></i>
-                                <span>Lightning Fast</span>
-                                <p>Get instant responses powered by cutting-edge AI</p>
-                            </div>
-                            <div class="feature">
-                                <i class="fas fa-brain"></i>
-                                <span>Intelligent</span>
-                                <p>Advanced machine learning algorithms</p>
-                            </div>
-                            <div class="feature">
-                                <i class="fas fa-comment-dots"></i>
-                                <span>Personality</span>
-                                <p>A chatbot with character and charm</p>
-                            </div>
-                            <div class="feature">
-                                <i class="fas fa-shield-alt"></i>
-                                <span>Trusted</span>
-                                <p>Created by the expert BlackCarbon Team</p>
-                            </div>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-brain"></i>
+                        <div class="text-content">
+                            <span>Powered by ZaAn LLC</span>
                         </div>
-                        <button id="getStartedBtn" class="get-started-btn">
-                            Chat with Quike <i class="fas fa-arrow-right"></i>
-                        </button>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-comment-dots"></i>
+                        <div class="text-content">
+                            <span>Personality-driven chat</span>
+                        </div>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-shield-alt"></i>
+                        <div class="text-content">
+                            <span>Created by BlackCarbon Team</span>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Right Side: Login and Illustration -->
-                <div class="landing-right">
-                    <!-- Login Section -->
-                    <div class="login-section">
-                        <div class="login-card">
-                            <h2>Welcome to Quike</h2>
-                            <p>Sign in to continue your AI journey</p>
-                            <form id="loginForm" class="login-form">
-                                <div class="form-group">
-                                    <input type="email" id="emailInput" placeholder="Email" required>
-                                </div>
-                                <div class="form-group">
-                                    <input type="password" id="passwordInput" placeholder="Password" required>
-                                </div>
-                                <button type="submit" class="login-btn" id="loginBtn">
-                                    <i class="fas fa-sign-in-alt"></i> Sign In
-                                </button>
-                                <div class="auth-links">
-                                    <a href="#" id="showSignupLink">Need an account? Sign up</a>
-                                </div>
-                            </form>
-                            <!-- Signup Form (Hidden by default) -->
-                            <form id="signupForm" class="login-form" style="display: none;">
-                                <div class="form-group">
-                                    <input type="email" id="signupEmailInput" placeholder="Email" required>
-                                </div>
-                                <div class="form-group">
-                                    <input type="password" id="signupPasswordInput" placeholder="Password" required>
-                                </div>
-                                <div class="form-group">
-                                    <input type="password" id="confirmPasswordInput" placeholder="Confirm Password" required>
-                                </div>
-                                <button type="submit" class="login-btn" id="signupBtn">
-                                    <i class="fas fa-user-plus"></i> Create Account
-                                </button>
-                                <div class="auth-links">
-                                    <a href="#" id="showLoginLink">Already have an account? Sign in</a>
-                                </div>
-                            </form>
-                            <div id="authMessage" class="auth-message"></div>
+                <div class="landing-buttons">
+                    <button id="tryQuikeBtn" class="try-quike-btn">
+                        <i class="fas fa-rocket"></i> Try Quike
+                    </button>
+                    <button id="showLoginModalBtn" class="login-modal-btn">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Login Modal -->
+        <div id="loginModal" class="login-modal">
+            <div class="login-modal-content">
+                <button class="close-modal-btn animated-close" id="closeLoginModal">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="login-card">
+                    <h2>Welcome to Quike</h2>
+                    <p>Sign in to continue your AI journey</p>
+                    <form id="loginForm" class="login-form">
+                        <div class="form-group">
+                            <input type="email" id="emailInput" placeholder="Email" required>
                         </div>
-                    </div>
+                        <div class="form-group">
+                            <input type="password" id="passwordInput" placeholder="Password" required>
+                        </div>
+                        <button type="submit" class="login-btn" id="loginBtn">
+                            <i class="fas fa-sign-in-alt"></i> Sign In
+                        </button>
+                        <div class="auth-links">
+                            <a href="#" id="showSignupLink">Need an account? Sign up</a>
+                        </div>
+                    </form>
+                    <!-- Signup Form (Hidden by default) -->
+                    <form id="signupForm" class="login-form" style="display: none;">
+                        <div class="form-group">
+                            <input type="email" id="signupEmailInput" placeholder="Email" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="password" id="signupPasswordInput" placeholder="Password" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="password" id="confirmPasswordInput" placeholder="Confirm Password" required>
+                        </div>
+                        <button type="submit" class="login-btn" id="signupBtn">
+                            <i class="fas fa-user-plus"></i> Create Account
+                        </button>
+                        <div class="auth-links">
+                            <a href="#" id="showLoginLink">Already have an account? Sign in</a>
+                        </div>
+                    </form>
+                    <div id="authMessage" class="auth-message"></div>
                 </div>
             </div>
         </div>
@@ -112,7 +121,7 @@
         <div class="chat-container" id="chatContainer">
             <div class="chat-layout">
                 <!-- Chat History Sidebar -->
-                <div class="chat-history-sidebar">
+                <div class="chat-history-sidebar" id="sidebarPanel">
                     <div class="user-profile">
                         <div class="user-avatar">
                             <img id="userAvatar" src="https://via.placeholder.com/40" alt="User Avatar">
@@ -126,12 +135,23 @@
                         <h2>Chat History</h2>
                         <div class="history-actions">
                             <button id="newChatBtn" class="new-chat-btn" title="Start a new chat">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                            <button id="signOutBtn" class="sign-out-btn" title="Sign out">
-                                <i class="fas fa-sign-out-alt"></i>
+                                <i class="fas fa-plus"></i> New Chat
                             </button>
                         </div>
+                    </div>
+                    <div class="new-chat-banner" id="newChatBanner">
+                        <button id="newChatBannerBtn" class="new-chat-banner-btn">
+                            <i class="fas fa-plus-circle"></i> Create New Chat
+                        </button>
+                    </div>
+                    <div class="login-prompt-banner" id="loginPromptBanner">
+                        <div class="login-prompt-message">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Sign in to save your chat history</span>
+                        </div>
+                        <button id="sidebarLoginBtn" class="sidebar-login-btn">
+                            <i class="fas fa-sign-in-alt"></i> Sign In
+                        </button>
                     </div>
                     <div class="history-list">
                         <div class="history-item active">
@@ -152,20 +172,25 @@
                 </div>
 
                 <!-- Main Chat Area -->
+                <!-- Sidebar Toggle Button -->
+                <button id="sidebarToggle" class="sidebar-toggle" type="button">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
                 <div class="main-chat-area">
                     <header class="chat-header">
                         <div class="header-content">
                             <div class="header-left">
-                                <button id="backButton" class="back-button">
-                                    <i class="fas fa-arrow-left"></i>
-                                </button>
-                                <h1>Quike</h1>
+                                <h1 id="appTitle">Quike</h1>
                             </div>
                             <div class="header-right">
                                 <div class="header-status">
                                     <div class="status-indicator"></div>
                                     <span>Online</span>
                                 </div>
+                                <button id="signOutBtn" class="logout-btn" title="Sign out">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                </button>
                             </div>
                         </div>
                     </header>
@@ -193,6 +218,9 @@
             </div>
         </div>
         
+        <!-- Sidebar Overlay (for mobile) -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        
         <!-- Code Snippet Viewer -->
         <div class="code-viewer" id="codeViewer">
             <div class="code-viewer-header">
@@ -206,8 +234,194 @@
             </div>
             <pre><code id="codeContent"></code></pre>
         </div>
+        
+        <!-- Delete Confirmation Modal -->
+        <div class="confirmation-modal" id="deleteConfirmationModal">
+            <div class="confirmation-modal-content">
+                <div class="confirmation-modal-header">
+                    <h3>Delete Chat</h3>
+                    <button class="close-modal-btn animated-close" id="closeDeleteModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="confirmation-modal-body">
+                    <p>Are you sure you want to delete this chat?</p>
+                    <p class="confirmation-warning">This action cannot be undone.</p>
+                </div>
+                <div class="confirmation-modal-footer">
+                    <button class="cancel-btn" id="cancelDeleteBtn">Cancel</button>
+                    <button class="confirm-btn" id="confirmDeleteBtn">Delete</button>
+                </div>
+            </div>
+        </div>
     </div>
+    <script>
+        // When document is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM fully loaded - setting up sidebar handlers');
+            
+            // Get sidebar elements
+            const sidebar = document.getElementById('sidebarPanel');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            
+            // Debug element existence
+            console.log('Sidebar panel exists:', !!sidebar);
+            console.log('Sidebar toggle exists:', !!sidebarToggle);
+            console.log('Sidebar overlay exists:', !!sidebarOverlay);
+            
+            if (sidebar) {
+                // Prevent clicks inside sidebar from closing it
+                sidebar.addEventListener('click', function(e) {
+                    console.log('Click inside sidebar - stopping propagation');
+                    e.stopPropagation();
+                });
+                
+                // Make all history items clickable
+                const historyItems = document.querySelectorAll('.history-item');
+                console.log('Found history items:', historyItems.length);
+                historyItems.forEach(function(item, index) {
+                    item.addEventListener('click', function(e) {
+                        console.log('History item clicked:', index);
+                        e.stopPropagation();
+                    });
+                });
+                
+                // Force sidebar to be interactive
+                sidebar.style.pointerEvents = 'auto';
+                sidebar.style.touchAction = 'auto';
+                
+                // Make all elements inside sidebar interactive
+                const allSidebarChildren = sidebar.querySelectorAll('*');
+                allSidebarChildren.forEach(function(child) {
+                    child.style.pointerEvents = 'auto';
+                    child.style.touchAction = 'auto';
+                });
+                console.log('Made all sidebar children interactive:', allSidebarChildren.length);
+            }
+            
+            // Close sidebar when escape key is pressed
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    console.log('Escape key pressed - closing sidebar');
+                    const sidebar = document.getElementById('sidebarPanel');
+                    const overlay = document.getElementById('sidebarOverlay');
+                    if (sidebar && overlay) {
+                        sidebar.classList.remove('visible');
+                        overlay.classList.remove('visible');
+                        sidebar.style.left = '-100%';
+                        overlay.style.display = 'none';
+                    }
+                }
+            });
+            
+            // Add event listeners for sidebar toggle and overlay
+            if (sidebarToggle && sidebarOverlay) {
+                // Direct implementation of toggle functionality
+                sidebarToggle.addEventListener('click', function(e) {
+                    console.log('Sidebar toggle clicked');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const sidebar = document.getElementById('sidebarPanel');
+                    const overlay = document.getElementById('sidebarOverlay');
+                    
+                    if (!sidebar || !overlay) {
+                        console.error('Sidebar elements not found');
+                        return;
+                    }
+                    
+                    // Toggle classes
+                    sidebar.classList.toggle('visible');
+                    overlay.classList.toggle('visible');
+                    
+                    // Use requestAnimationFrame to ensure styles are applied after the class change
+                    requestAnimationFrame(() => {
+                        // Force sidebar to be visible with inline styles if visible class is present
+                        if (sidebar.classList.contains('visible')) {
+                            console.log('Making sidebar visible with inline styles');
+                            
+                            // Force the sidebar to be visible with important inline styles
+                            sidebar.setAttribute('style', 'left: 0 !important; ' +
+                                'opacity: 1 !important; ' +
+                                'visibility: visible !important; ' +
+                                'display: block !important; ' +
+                                'z-index: 99999 !important; ' +
+                                'pointer-events: auto !important; ' +
+                                'touch-action: auto !important; ' +
+                                'transform: none !important;');
+                            
+                            overlay.style.display = 'block';
+                            overlay.style.opacity = '1';
+                            overlay.style.visibility = 'visible';
+                            
+                            // Double-check position after a short delay
+                            setTimeout(() => {
+                                if (getComputedStyle(sidebar).left !== '0px') {
+                                    console.warn('Sidebar position still not 0px, forcing again');
+                                    sidebar.style.setProperty('left', '0', 'important');
+                                }
+                            }, 50);
+                        } else {
+                            console.log('Hiding sidebar with inline styles');
+                            // Reset inline styles when closing
+                            sidebar.setAttribute('style', 'left: -100% !important; ' +
+                                'pointer-events: auto !important; ' +
+                                'touch-action: auto !important;');
+                            overlay.style.display = 'none';
+                        }
+                        
+                        // Log sidebar state
+                        const computedStyle = window.getComputedStyle(sidebar);
+                        console.log('Sidebar visible class:', sidebar.classList.contains('visible'));
+                        console.log('Sidebar left:', computedStyle.left);
+                        console.log('Sidebar display:', computedStyle.display);
+                        console.log('Sidebar visibility:', computedStyle.visibility);
+                    });
+                });
+                
+                // Close sidebar when overlay is clicked
+                sidebarOverlay.addEventListener('click', function(e) {
+                    console.log('Overlay clicked - closing sidebar');
+                    e.stopPropagation();
+                    
+                    const sidebar = document.getElementById('sidebarPanel');
+                    if (!sidebar) {
+                        console.error('Sidebar not found in overlay click handler');
+                        return;
+                    }
+                    
+                    // Remove classes
+                    sidebar.classList.remove('visible');
+                    this.classList.remove('visible');
+                    
+                    // Force styles
+                    sidebar.style.cssText = 'left: -100% !important; ' +
+                        'pointer-events: auto !important; ' +
+                        'touch-action: auto !important;';
+                    
+                    this.style.cssText = 'display: none !important; ' +
+                        'opacity: 0 !important; ' +
+                        'visibility: hidden !important;';
+                    
+                    // Remove any force-sidebar style if it exists
+                    const forceStyle = document.getElementById('force-sidebar');
+                    if (forceStyle) {
+                        forceStyle.remove();
+                    }
+                });
+                
+                // Add touch events for mobile
+                sidebarToggle.addEventListener('touchend', function(e) {
+                    console.log('Touch end on sidebar toggle');
+                    e.preventDefault();
+                    // Trigger the click event handler
+                    this.click();
+                }, {passive: false});
+            }
+        });
+    </script>
     <script src="personality.js"></script>
     <script src="script.js"></script>
 </body>
-</html> 
+</html>

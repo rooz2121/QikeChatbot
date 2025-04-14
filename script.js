@@ -3,13 +3,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const landingPage = document.getElementById('landingPage');
     const chatContainer = document.getElementById('chatContainer');
     const getStartedBtn = document.getElementById('getStartedBtn');
-    const backButton = document.getElementById('backButton');
     const chatForm = document.getElementById('chatForm');
     const userInput = document.getElementById('userInput');
     const chatMessages = document.getElementById('chatMessages');
     const apiKey = 'V2NiNfHiCxawfR1QeCp1KxZKjIkJDM52'; // Mistral AI API key
     const particlesContainer = document.getElementById('particles');
     const googleLoginBtn = document.querySelector('.google-login-btn');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const chatLayout = document.querySelector('.chat-layout');
+    const sidebarPanel = document.getElementById('sidebarPanel');
+    const appTitle = document.getElementById('appTitle');
+    const newChatBtn = document.getElementById('newChatBtn');
+    const historyList = document.querySelector('.history-list');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
 
     // Initialize - hide chat container, show landing page
     chatContainer.style.display = 'none';
@@ -17,40 +23,402 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create animated background particles
     createParticles();
 
-    // Button click handlers
-    getStartedBtn.addEventListener('click', () => {
-        // Hide landing page with animation
-        landingPage.classList.add('hidden');
-        
-        // Show chat container after a slight delay
-        setTimeout(() => {
-            landingPage.style.display = 'none';
-            chatContainer.style.display = 'flex';
-            
-            // Add visible class after a slight delay to trigger the animation
+    // Login Modal Elements
+    const loginModal = document.getElementById('loginModal');
+    const showLoginModalBtn = document.getElementById('showLoginModalBtn');
+    const closeLoginModal = document.getElementById('closeLoginModal');
+    const tryQuikeBtn = document.getElementById('tryQuikeBtn');
+    
+    // Show login modal
+    if (showLoginModalBtn) {
+        showLoginModalBtn.addEventListener('click', () => {
+            loginModal.style.visibility = 'visible';
+            loginModal.style.opacity = '1';
+            loginModal.classList.add('visible');
+        });
+    }
+    
+    // Close login modal
+    if (closeLoginModal) {
+        closeLoginModal.addEventListener('click', () => {
+            loginModal.classList.remove('visible');
             setTimeout(() => {
-                chatContainer.classList.add('visible');
-                // Focus on the input field
-                userInput.focus();
-                // Scroll to the bottom
-                scrollToBottom();
-            }, 50);
-        }, 500);
-    });
+                loginModal.style.visibility = 'hidden';
+                loginModal.style.opacity = '0';
+            }, 500);
+        });
+    }
+    
+    // Try Quike button (for guest users)
+    if (tryQuikeBtn) {
+        tryQuikeBtn.addEventListener('click', () => {
+            // Hide landing page with animation
+            landingPage.classList.add('hidden');
+            
+            // Show chat container after a slight delay
+            setTimeout(() => {
+                landingPage.style.display = 'none';
+                chatContainer.style.display = 'flex';
+                
+                // Add visible class after a slight delay to trigger the animation
+                setTimeout(() => {
+                    chatContainer.classList.add('visible');
+                    // Focus on the input field
+                    userInput.focus();
+                    // Scroll to the bottom
+                    scrollToBottom();
+                }, 50);
+            }, 500);
+        });
+    }
 
-    backButton.addEventListener('click', () => {
-        // Hide chat container
-        chatContainer.classList.remove('visible');
-        
-        // Show landing page after a slight delay
-        setTimeout(() => {
-            chatContainer.style.display = 'none';
-            landingPage.style.display = 'flex';
-            landingPage.classList.remove('hidden');
-        }, 500);
-    });
+    // Back button functionality removed
     
     // Google login button handler is now handled by supabase-auth.js
+    
+    // Sidebar toggle functionality
+    sidebarToggle.addEventListener('click', () => {
+        chatLayout.classList.toggle('sidebar-closed');
+        
+        // Update the toggle button icon
+        const toggleIcon = sidebarToggle.querySelector('i');
+        if (chatLayout.classList.contains('sidebar-closed')) {
+            toggleIcon.classList.remove('fa-bars');
+            toggleIcon.classList.add('fa-chevron-right');
+        } else {
+            toggleIcon.classList.remove('fa-chevron-right');
+            toggleIcon.classList.add('fa-bars');
+        }
+    });
+    
+    // Mobile sidebar toggle functionality
+    if (sidebarToggle && sidebarPanel && sidebarOverlay) {
+        // Make sure sidebar is fully initialized
+        sidebarPanel.style.pointerEvents = 'auto';
+        sidebarOverlay.style.pointerEvents = 'auto';
+        
+        // More reliable click handler for mobile with debugging
+        function toggleSidebar() {
+            try {
+                console.log('Toggle sidebar called');
+                const sidebar = document.getElementById('sidebarPanel');
+                const overlay = document.getElementById('sidebarOverlay');
+                
+                if (!sidebar) {
+                    console.error('Sidebar panel element not found!');
+                    return;
+                }
+                
+                if (!overlay) {
+                    console.error('Sidebar overlay element not found!');
+                    return;
+                }
+                
+                // Debug sidebar before toggle
+                debugSidebar('Before toggle');
+                
+                // Toggle classes
+                const isVisible = sidebar.classList.contains('visible');
+                
+                if (!isVisible) {
+                    // Opening the sidebar
+                    sidebar.classList.add('visible');
+                    overlay.classList.add('visible');
+                    
+                    // FORCE the sidebar to be visible with inline styles
+                    sidebar.style.cssText = 'left: 0 !important; ' +
+                        'opacity: 1 !important; ' +
+                        'visibility: visible !important; ' +
+                        'display: block !important; ' +
+                        'z-index: 99999 !important; ' +
+                        'pointer-events: auto !important; ' +
+                        'touch-action: auto !important; ' +
+                        'transform: none !important; ' +
+                        'position: fixed !important; ' +
+                        'top: 0 !important; ' +
+                        'width: 280px !important; ' +
+                        'height: 100% !important; ' +
+                        'background-color: var(--bg-color) !important;';
+                    
+                    // Force overlay to be visible
+                    overlay.style.cssText = 'display: block !important; ' +
+                        'opacity: 1 !important; ' +
+                        'visibility: visible !important; ' +
+                        'z-index: 99998 !important; ' +
+                        'position: fixed !important; ' +
+                        'top: 0 !important; ' +
+                        'left: 0 !important; ' +
+                        'width: 100% !important; ' +
+                        'height: 100% !important; ' +
+                        'background: rgba(0, 0, 0, 0.5) !important; ' +
+                        'pointer-events: auto !important;';
+                    
+                    // Make all elements inside the sidebar interactive
+                    makeAllChildrenInteractive(sidebar);
+                    
+                    // Set up the overlay click handler to close the sidebar
+                    overlay.onclick = function(e) {
+                        e.stopPropagation();
+                        console.log('Overlay clicked - closing sidebar');
+                        closeSidebar();
+                        return false;
+                    };
+                    
+                    // Double-check position after a short delay
+                    setTimeout(() => {
+                        const computedLeft = getComputedStyle(sidebar).left;
+                        console.log('Sidebar computed left after timeout:', computedLeft);
+                        
+                        if (computedLeft !== '0px') {
+                            console.warn('Sidebar position still not 0px, forcing again with !important');
+                            document.body.insertAdjacentHTML('beforeend', 
+                                '<style id="force-sidebar">' +
+                                '#sidebarPanel.visible { left: 0 !important; transform: none !important; }' +
+                                '</style>');
+                            
+                            // Try one more time with direct style manipulation
+                            sidebar.style.setProperty('left', '0', 'important');
+                        }
+                    }, 50);
+                } else {
+                    // Closing the sidebar
+                    closeSidebar();
+                }
+                
+                // Debug sidebar after toggle
+                setTimeout(() => {
+                    debugSidebar('After toggle');
+                }, 100);
+            } catch (error) {
+                console.error('Error in toggleSidebar:', error);
+            }
+        }
+
+        // Function to close the sidebar
+        function closeSidebar() {
+            try {
+                const sidebar = document.getElementById('sidebarPanel');
+                const overlay = document.getElementById('sidebarOverlay');
+                
+                if (!sidebar || !overlay) {
+                    console.error('Sidebar elements not found in closeSidebar');
+                    return;
+                }
+                
+                console.log('Closing sidebar');
+                sidebar.classList.remove('visible');
+                overlay.classList.remove('visible');
+                
+                // Reset inline styles when closing
+                sidebar.style.cssText = 'left: -100% !important; ' +
+                    'pointer-events: auto !important; ' +
+                    'touch-action: auto !important;';
+                
+                overlay.style.cssText = 'display: none !important; ' +
+                    'opacity: 0 !important; ' +
+                    'visibility: hidden !important;';
+                
+                // Remove any force-sidebar style if it exists
+                const forceStyle = document.getElementById('force-sidebar');
+                if (forceStyle) {
+                    forceStyle.remove();
+                }
+            } catch (error) {
+                console.error('Error in closeSidebar:', error);
+            }
+        }
+
+        // Function to debug sidebar state
+        function debugSidebar(label) {
+            try {
+                const sidebar = document.getElementById('sidebarPanel');
+                if (!sidebar) {
+                    console.error('Cannot debug: Sidebar panel element not found!');
+                    return;
+                }
+                
+                const computedStyle = window.getComputedStyle(sidebar);
+                console.group(`Sidebar Debug: ${label}`);
+                console.log('Sidebar element:', sidebar);
+                console.log('Has visible class:', sidebar.classList.contains('visible'));
+                console.log('Display:', computedStyle.display);
+                console.log('Visibility:', computedStyle.visibility);
+                console.log('Opacity:', computedStyle.opacity);
+                console.log('Left:', computedStyle.left);
+                console.log('Z-index:', computedStyle.zIndex);
+                console.log('Pointer-events:', computedStyle.pointerEvents);
+                console.log('Touch-action:', computedStyle.touchAction);
+                console.log('Position:', computedStyle.position);
+                console.groupEnd();
+            } catch (error) {
+                console.error('Error in debugSidebar:', error);
+            }
+        }
+
+        // Make all children of an element interactive
+        function makeAllChildrenInteractive(element) {
+            try {
+                if (!element) return;
+                
+                const allChildren = element.querySelectorAll('*');
+                allChildren.forEach(child => {
+                    child.style.pointerEvents = 'auto';
+                    child.style.touchAction = 'auto';
+                });
+                
+                console.log(`Made ${allChildren.length} elements interactive inside sidebar`);
+            } catch (error) {
+                console.error('Error in makeAllChildrenInteractive:', error);
+            }
+        }
+
+        // Add both click and touchend events for better mobile response
+        sidebarToggle.addEventListener('click', toggleSidebar, {passive: false});
+        sidebarToggle.addEventListener('touchend', function(e) {
+            e.preventDefault(); // Prevent default touch behavior
+            toggleSidebar(e);
+        }, {passive: false});
+        
+        // Make sidebar elements directly interactable
+        const makeInteractable = function(element) {
+            if (element) {
+                element.style.pointerEvents = 'auto';
+                element.style.touchAction = 'auto';
+            }
+        };
+        
+        // Apply to sidebar and child elements
+        makeInteractable(sidebarPanel);
+        const historyItems = sidebarPanel.querySelectorAll('.history-item');
+        historyItems.forEach(makeInteractable);
+        
+        // Ensure the history items are clickable
+        sidebarPanel.addEventListener('click', function(e) {
+            // Prevent click from bubbling to document
+            e.stopPropagation();
+        }, {passive: false});
+        
+        // Close sidebar when overlay is clicked
+        sidebarOverlay.addEventListener('click', function(e) {
+            e.stopPropagation();
+            sidebarPanel.classList.remove('visible');
+            sidebarOverlay.classList.remove('visible');
+        }, {passive: false});
+        
+        // Extra touch event for overlay
+        sidebarOverlay.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            sidebarPanel.classList.remove('visible');
+            sidebarOverlay.classList.remove('visible');
+        }, {passive: false});
+        
+        // Close sidebar when escape key is pressed
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && sidebarPanel.classList.contains('visible')) {
+                sidebarPanel.classList.remove('visible');
+                sidebarOverlay.classList.remove('visible');
+            }
+        });
+        
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', function(e) {
+            // Only run this on mobile screens
+            if (window.innerWidth <= 767 && sidebarPanel.classList.contains('visible')) {
+                // Check if the click is outside the sidebar
+                if (!sidebarPanel.contains(e.target) && e.target !== sidebarToggle) {
+                    sidebarPanel.classList.remove('visible');
+                    sidebarOverlay.classList.remove('visible');
+                }
+            }
+        });
+        
+        // Add listener to the panel to stop propagation for clicks inside it
+        sidebarPanel.addEventListener('click', (event) => {
+            // Prevent clicks inside the sidebar from bubbling up to the overlay
+            event.stopPropagation();
+        });
+        
+        // Optional: Add Escape key listener to close sidebar
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                sidebarPanel.classList.remove('visible');
+                sidebarOverlay.classList.remove('visible');
+            }
+        });
+    }
+    
+    // New Chat button functionality
+    newChatBtn.addEventListener('click', () => {
+        if (window.supabaseAuth && typeof window.supabaseAuth.createNewChatSession === 'function') {
+            window.supabaseAuth.createNewChatSession();
+        } else {
+            createNewChat();
+        }
+    });
+    
+    // New Chat banner button functionality
+    const newChatBannerBtn = document.getElementById('newChatBannerBtn');
+    if (newChatBannerBtn) {
+        newChatBannerBtn.addEventListener('click', () => {
+            if (window.supabaseAuth && typeof window.supabaseAuth.createNewChatSession === 'function') {
+                window.supabaseAuth.createNewChatSession();
+            } else {
+                createNewChat();
+            }
+        });
+    }
+    
+    // Function to create a new chat
+    function createNewChat() {
+        // Clear the chat messages
+        chatMessages.innerHTML = '';
+        
+        // Add the initial bot message
+        addMessage("Hello! I'm Quike. How can I assist you today?", 'bot', false);
+        
+        // Create a new chat history item
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const newChatId = 'chat-' + Date.now();
+        
+        // Create new chat history item
+        const newChatItem = document.createElement('div');
+        newChatItem.classList.add('history-item');
+        newChatItem.dataset.chatId = newChatId;
+        
+        // Make the new chat active
+        const currentActive = document.querySelector('.history-item.active');
+        if (currentActive) {
+            currentActive.classList.remove('active');
+        }
+        newChatItem.classList.add('active');
+        
+        newChatItem.innerHTML = `
+            <div class="history-icon"><i class="fas fa-comment"></i></div>
+            <div class="history-content">
+                <div class="history-title">New Chat</div>
+                <div class="history-preview">Hello! I'm Quike...</div>
+            </div>
+        `;
+        
+        // Add the new chat to the history list at the top
+        if (historyList.firstChild) {
+            historyList.insertBefore(newChatItem, historyList.firstChild);
+        } else {
+            historyList.appendChild(newChatItem);
+        }
+        
+        // Focus on the input field
+        userInput.value = '';
+        userInput.focus();
+        
+        // Save the new chat to the database if supabase is available
+        if (window.supabaseAuth && typeof window.supabaseAuth.createNewChat === 'function') {
+            window.supabaseAuth.createNewChat(newChatId);
+        }
+        
+        return newChatId;
+    }
 
     // Listen for form submission
     chatForm.addEventListener('submit', async (e) => {
@@ -103,13 +471,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message', `${sender}-message`);
         
+        // Update the active chat preview text if it's a user message
+        if (sender === 'user' && saveToDb) {
+            const activeChat = document.querySelector('.history-item.active');
+            if (activeChat) {
+                const previewElement = activeChat.querySelector('.history-preview');
+                if (previewElement) {
+                    // Truncate message for preview
+                    const previewText = text.length > 25 ? text.substring(0, 25) + '...' : text;
+                    previewElement.textContent = previewText;
+                }
+            }
+        }
+        
         const contentDiv = document.createElement('div');
         contentDiv.classList.add('message-content');
         
-        // Save to database if requested
+        // Save to database if requested and user is logged in
         if (saveToDb && window.supabaseAuth && typeof window.supabaseAuth.saveMessageToDatabase === 'function') {
-            console.log('Saving message to database:', text);
-            window.supabaseAuth.saveMessageToDatabase(text, sender === 'user' ? 'user' : 'assistant');
+            // Check if this is a temporary chat (guest mode)
+            const isTemporaryChat = document.querySelector('.history-item.active .history-title')?.textContent === 'Temporary Chat';
+            
+            if (isTemporaryChat) {
+                console.log('In temporary chat mode, not saving message to database');
+            } else {
+                console.log('Saving message to database:', text);
+                window.supabaseAuth.saveMessageToDatabase(text, sender === 'user' ? 'user' : 'assistant');
+            }
         } else if (saveToDb) {
             console.error('Could not save message to database: supabaseAuth not available');
         }

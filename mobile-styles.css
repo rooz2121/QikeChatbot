@@ -1,0 +1,319 @@
+/* Mobile Responsive Styles for QuikeChatbot */
+
+/* Base Mobile Styles */
+@media (max-width: 767px) {
+    /* General Layout */
+    html, body {
+        overflow: hidden;
+        height: 100%;
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .app-container {
+        height: 100%;
+        width: 100%;
+        max-width: 100vw;
+        overflow: hidden;
+    }
+    
+    /* Chat Container */
+    #chatContainer {
+        display: flex !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+    }
+    
+    /* Chat Layout */
+    .chat-layout {
+        flex-direction: column;
+        height: 100%;
+        width: 100vw;
+        max-width: 100vw;
+        position: relative;
+        overflow: hidden;
+        padding: 0;
+        margin: 0;
+    }
+    
+    /* ======= SIDEBAR STYLES ======= */
+    /* Sidebar Toggle Button */
+    .sidebar-toggle {
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        z-index: 9997;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 50%;
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Sidebar Panel */
+    .chat-history-sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: -100% !important;
+        width: 280px !important;
+        height: 100% !important;
+        z-index: 99999 !important;
+        background-color: var(--bg-color) !important;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3) !important;
+        transition: left 0.3s ease !important;
+        overflow-y: auto !important;
+        pointer-events: auto !important;
+        touch-action: auto !important;
+        display: block !important; /* Always keep it in the DOM */
+        visibility: visible !important; /* Keep it visible but off-screen */
+        opacity: 1 !important; /* Keep it fully opaque */
+        transform: translateZ(0) !important; /* Force hardware acceleration */
+        will-change: left !important; /* Optimize for animation */
+    }
+    
+    /* This is the critical selector - must override any other styles */
+    .chat-history-sidebar.visible {
+        left: 0 !important;
+        right: auto !important;
+        pointer-events: auto !important;
+        touch-action: auto !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: translateZ(0) !important;
+    }
+    
+    /* Ensure the sidebar is visible when the visible class is added - most specific selector */
+    body .app-container .chat-container .chat-layout .chat-history-sidebar.visible {
+        left: 0 !important;
+        transform: none !important;
+        -webkit-transform: none !important;
+        -moz-transform: none !important;
+        -ms-transform: none !important;
+        -o-transform: none !important;
+        margin-left: 0 !important;
+        position: fixed !important;
+        display: block !important;
+        visibility: visible !important;
+    }
+    
+    /* Make all sidebar children interactive */
+    .chat-history-sidebar * {
+        pointer-events: auto !important;
+        touch-action: auto !important;
+    }
+    
+    /* Ensure sidebar elements are interactive */
+    .chat-history-sidebar .history-item,
+    .chat-history-sidebar .new-chat-btn,
+    .chat-history-sidebar .sidebar-login-btn,
+    .chat-history-sidebar .user-profile,
+    .chat-history-sidebar .history-header {
+        pointer-events: auto !important;
+        touch-action: auto !important;
+        cursor: pointer !important;
+        position: relative !important;
+        z-index: 100000 !important; /* Higher than sidebar itself */
+    }
+    
+    /* Sidebar Overlay */
+    .sidebar-overlay {
+        display: none !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+        z-index: 99998 !important;
+        opacity: 0 !important;
+        transition: opacity 0.3s ease !important;
+        pointer-events: auto !important;
+    }
+    
+    /* Force the overlay to be visible and interactive */
+    .sidebar-overlay.visible {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+        z-index: 99998 !important;
+    }
+    
+    /* App Title */
+    #appTitle {
+        margin-left: 45px;
+    }
+    
+    /* ======= CHAT AREA STYLES ======= */
+    /* Main Chat Area */
+    .main-chat-area {
+        width: 100%;
+        max-width: 100vw;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        padding-top: 60px;
+        margin: 0;
+        padding-left: 0;
+        padding-right: 0;
+        position: absolute;
+        left: 0;
+        right: 0;
+        overflow: hidden;
+    }
+    
+    /* Chat Header */
+    .chat-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 100;
+        padding: 10px;
+        height: 60px;
+        background-color: var(--header-bg);
+    }
+    
+    /* Chat Messages */
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        width: 100%;
+        max-width: 100%;
+        padding: 10px;
+        padding-bottom: 70px;
+        margin: 0;
+    }
+    
+    /* Message Bubbles */
+    .message {
+        max-width: 80%;
+        margin-bottom: 8px;
+        width: auto;
+    }
+    
+    .bot-message {
+        margin-right: auto;
+        margin-left: 5px;
+    }
+    
+    .user-message {
+        margin-left: auto;
+        margin-right: 5px;
+    }
+    
+    .message-content {
+        max-width: 100%;
+        padding: 8px 12px;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+    
+    .message-content p {
+        word-break: break-word;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .message-time {
+        font-size: 10px;
+        margin-top: 2px;
+        opacity: 0.7;
+    }
+    
+    /* Chat Input Container */
+    .chat-input-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 10px;
+        background: var(--bg-color);
+        border-top: 1px solid var(--border-color);
+        z-index: 100;
+    }
+    
+    .input-wrapper {
+        display: flex;
+        width: 100%;
+    }
+    
+    #userInput {
+        flex: 1;
+        padding: 12px;
+        border-radius: 20px;
+        font-size: 14px;
+    }
+    
+    /* ======= MODAL STYLES ======= */
+    /* Code Viewer */
+    .code-viewer {
+        width: 100%;
+        height: 80%;
+        max-width: 100%;
+        border-radius: 10px;
+        z-index: 10000;
+    }
+    
+    /* Delete Confirmation Modal */
+    .confirmation-modal {
+        z-index: 10000;
+    }
+    
+    .confirmation-modal-content {
+        width: 90%;
+        max-width: 320px;
+    }
+    
+    /* Empty Chat Message */
+    .empty-chat-message {
+        padding: 1rem;
+    }
+    
+    /* No History */
+    .no-history {
+        padding: 1rem;
+    }
+    
+    /* Small Phone Screens */
+    @media (max-width: 375px) {
+        .chat-history-sidebar {
+            width: 250px;
+        }
+        
+        .message {
+            max-width: 90%;
+        }
+        
+        .chat-header .header-content {
+            padding: 0 5px;
+        }
+        
+        #appTitle {
+            font-size: 1.2rem;
+        }
+        
+        .chat-input-container {
+            padding: 8px;
+        }
+        
+        #userInput {
+            padding: 10px;
+            font-size: 13px;
+        }
+    }
+}
